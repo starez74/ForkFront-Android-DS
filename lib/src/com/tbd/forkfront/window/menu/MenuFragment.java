@@ -42,10 +42,15 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
       @Nullable ViewGroup container,
       @Nullable Bundle savedInstanceState) {
     MenuSelectMode how = mController.mHow;
+    boolean docked = mController.mType == NHW_Menu.Type.Menu
+        && requireActivity() instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) requireActivity()).isFixedTabletLayout();
     if (how == MenuSelectMode.PickMany) {
-      mRoot = inflater.inflate(R.layout.dialog_menu3, container, false);
+      mRoot = inflater.inflate(docked ? R.layout.tablet_menu3 : R.layout.dialog_menu3,
+          container, false);
     } else {
-      mRoot = inflater.inflate(R.layout.dialog_menu1, container, false);
+      mRoot = inflater.inflate(docked ? R.layout.tablet_menu1 : R.layout.dialog_menu1,
+          container, false);
     }
 
     mListView = mRoot.findViewById(R.id.menu_list);

@@ -223,6 +223,11 @@ class MapViewport {
     } catch (Exception e) {
     }
     zoomForced(-mScaleCount);
+    // The tablet workspace uses slightly smaller, legible map glyphs by default.
+    if (mMap.mContext instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) mMap.mContext).isFixedTabletLayout()) {
+      zoomForced(-32.f);
+    }
   }
 
   PointF getViewOffset() {

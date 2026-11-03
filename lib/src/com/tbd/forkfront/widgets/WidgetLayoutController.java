@@ -72,8 +72,13 @@ public class WidgetLayoutController {
     mPrimaryWidgetLayout = layout;
     if (mPrimaryWidgetLayout != null) {
       mPrimaryWidgetLayout.setDependencies(this, mCommands, mMapInput);
-      mPrimaryWidgetLayout.loadLayout();
-      mPrimaryWidgetLayout.setEditMode(isEditMode());
+      // Fixed tablet controls use real layout regions, not movable saved widgets.
+      if (isFixedTablet()) {
+        mPrimaryWidgetLayout.setEditMode(false);
+      } else {
+        mPrimaryWidgetLayout.loadLayout();
+        mPrimaryWidgetLayout.setEditMode(isEditMode());
+      }
     }
   }
 
@@ -96,7 +101,7 @@ public class WidgetLayoutController {
   }
 
   public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-    if (mPrimaryWidgetLayout != null) {
+    if (mPrimaryWidgetLayout != null && !isFixedTablet()) {
       mPrimaryWidgetLayout.reloadForNewOrientation(newConfig);
     }
     if (mSecondaryWidgetLayout != null) {
@@ -164,6 +169,11 @@ public class WidgetLayoutController {
     }
   }
 
+  private boolean isFixedTablet() {
+    return mScope.getActivity() instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) mScope.getActivity()).isFixedTabletLayout();
+  }
+
   public static ControlWidget findDpadWidget(WidgetLayout layout) {
     if (layout == null) return null;
     for (int i = 0; i < layout.getChildCount(); i++) {
@@ -183,7 +193,7 @@ public class WidgetLayoutController {
   }
 
   public void setLayoutEditMode(WidgetLayout layout, boolean enabled, boolean showEditBar) {
-    if (layout == null) return;
+    if (layout == null || (layout == mPrimaryWidgetLayout && isFixedTablet())) return;
     if (enabled) {
       layout.enterEditMode();
       layout.loadLayout();
@@ -448,6 +458,7 @@ public class WidgetLayoutController {
   }
 
   public void setEditMode(boolean enabled) {
+    if (enabled && isFixedTablet()) return;
     setLayoutEditMode(mPrimaryWidgetLayout, enabled, false);
     setLayoutEditMode(mSecondaryWidgetLayout, enabled, true);
 

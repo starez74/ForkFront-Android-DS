@@ -37,6 +37,7 @@ public final class FixedTabletUi
   private final TextView messageLine;
   private final FrameLayout menuHost;
   private final TextView menuPlaceholder;
+  private com.tbd.forkfront.companion.CompanionPanel companion;
   private NHW_Status statusWindow;
   private NHW_Message messageWindow;
   private long conditionMask;
@@ -118,7 +119,7 @@ public final class FixedTabletUi
     stage.addView(sidebar, sidebarParams);
 
     TextView placeholder = label(activity, 13, true);
-    placeholder.setText("Inventory / menu\nPress i to open");
+    placeholder.setText("Inventory / menu\nPress i to open\n\nTap here for companion");
     placeholder.setPadding(dp(activity, 10), dp(activity, 10), dp(activity, 8), 0);
     sidebar.addView(placeholder, new FrameLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -133,6 +134,8 @@ public final class FixedTabletUi
         new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
     FixedTabletUi ui = new FixedTabletUi(activity, status, message, menu, placeholder);
+    ui.companion = new com.tbd.forkfront.companion.CompanionPanel(activity, sidebar);
+    placeholder.setOnClickListener(v -> ui.toggleCompanion());
     LinearLayout controls = new LinearLayout(activity);
     controls.setOrientation(LinearLayout.HORIZONTAL);
     controls.setPadding(dp(activity, 7), dp(activity, 5), 0, dp(activity, 5));
@@ -227,6 +230,14 @@ public final class FixedTabletUi
         }
         break;
     }
+    // Companion text entry is separate from NetHack gameplay and never sends
+    // question characters to the game engine.
+    if (companion != null && companion.handleVirtualKey(value, keyCode)) {
+      shift = false;
+      ctrl = false;
+      updateModifiers();
+      return;
+    }
     NH_State state = activity.getState();
     if (state != null) {
       // A touchscreen button sends no hardware KeyEvent. When an Android EditText
@@ -258,8 +269,25 @@ public final class FixedTabletUi
   public int getMenuHostId() { return menuHost.getId(); }
 
   public void showMenu(boolean visible) {
+    if (visible && companion != null) companion.hide();
     menuHost.setVisibility(visible ? View.VISIBLE : View.GONE);
     menuPlaceholder.setVisibility(visible ? View.GONE : View.VISIBLE);
+  }
+
+  public void toggleCompanion() {
+    if (companion == null) return;
+    if (menuHost.getVisibility() == View.VISIBLE) {
+      android.widget.Toast.makeText(activity, "Close the current NetHack menu first",
+          android.widget.Toast.LENGTH_SHORT).show();
+      return;
+    }
+    if (companion.isVisible()) companion.hide();
+    else companion.show();
+  }
+
+  public void dispose() {
+    detach();
+    if (companion != null) companion.close();
   }
 
   public void attach(NH_State state) {
@@ -322,6 +350,7 @@ public final class FixedTabletUi
       }
     }
     statusLine.setText(line);
+    if (companion != null) companion.updateTitle(value(NHW_Status.BL_TITLE));
   }
 
   @Override

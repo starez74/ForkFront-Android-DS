@@ -116,6 +116,8 @@ public class DrawerMenuController {
 
     if (itemId == R.id.nav_keyboard) {
       mActivity.showGameKeyboard();
+    } else if (itemId == R.id.nav_companion) {
+      mActivity.openCompanion();
     } else if (itemId == R.id.nav_settings) {
       mActivity.launchSettings();
     } else if (itemId == R.id.nav_edit_overlay) {

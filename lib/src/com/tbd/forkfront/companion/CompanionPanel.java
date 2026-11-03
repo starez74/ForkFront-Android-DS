@@ -357,7 +357,7 @@ public final class CompanionPanel {
     results.removeAllViews();
     status.setText(shareStatus
         ? "Asking AI… sharing limited HP/level data."
-        : "Asking AI… question only; character data off.");
+        : "Asking AI… sharing role and chat, but not HP/level.");
 
     aiClient.ask(activity, question, role, requestedFactual, allowedState, turns,
         (reply, error) -> {

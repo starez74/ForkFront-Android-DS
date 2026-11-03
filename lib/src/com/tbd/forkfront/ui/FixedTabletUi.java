@@ -48,7 +48,7 @@ public final class FixedTabletUi
   };
   private final Map<Integer, NHW_Status.StatusField> fields = new HashMap<>();
   private boolean shift, ctrl, symbols;
-  private TextView shiftButton, ctrlButton, symbolButton;
+  private TextView shiftButton, secondShiftButton, ctrlButton, symbolButton;
   private final TextView[] numberButtons = new TextView[10];
 
   private FixedTabletUi(ForkFront activity, TextView statusLine, TextView messageLine,
@@ -186,7 +186,10 @@ public final class FixedTabletUi
         p.setMargins(dp(activity, 2), dp(activity, 2), dp(activity, 2), dp(activity, 2));
         row.addView(key, p);
         if (rowIndex == 0 && keyIndex < 10) numberButtons[keyIndex] = key;
-        if (name.equals("Shift")) shiftButton = key;
+        if (name.equals("Shift")) {
+          if (shiftButton == null) shiftButton = key;
+          else secondShiftButton = key;
+        }
         if (name.equals("Ctrl")) ctrlButton = key;
         if (name.equals("!#1")) symbolButton = key;
       }
@@ -231,6 +234,7 @@ public final class FixedTabletUi
 
   private void updateModifiers() {
     if (shiftButton != null) shiftButton.setTextColor(shift ? 0xFF80D545 : TEXT);
+    if (secondShiftButton != null) secondShiftButton.setTextColor(shift ? 0xFF80D545 : TEXT);
     if (ctrlButton != null) ctrlButton.setTextColor(ctrl ? 0xFF80D545 : TEXT);
     if (symbolButton != null) symbolButton.setTextColor(symbols ? 0xFF80D545 : TEXT);
     for (int i = 0; i < numberButtons.length; i++) {

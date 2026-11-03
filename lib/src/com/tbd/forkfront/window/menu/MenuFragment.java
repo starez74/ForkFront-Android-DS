@@ -59,7 +59,7 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
       if (title != null) {
         String menuTitle = mController.getTitle();
         if (menuTitle == null || menuTitle.trim().isEmpty()) {
-          menuTitle = how == MenuSelectMode.PickNone ? "Inventory" : "Menu";
+          menuTitle = isInventoryMenu() ? "Inventory" : "Menu";
         }
         title.setText(menuTitle);
       }
@@ -133,6 +133,46 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
     updateSelectAllBtn();
 
     return mRoot;
+  }
+
+  /**
+   * The game's inventory often has a blank prompt and can use PickOne, so
+   * menu selection mode alone cannot identify it. Recognise familiar NetHack
+   * inventory category headers, but keep other selection menus labelled Menu.
+   */
+  private boolean isInventoryMenu() {
+    if (mController.mItems == null) return false;
+    int inventoryCategories = 0;
+    for (MenuItem item : mController.mItems) {
+      if (item == null || !item.isHeader()) continue;
+      String name = item.getName();
+      if (name == null) continue;
+      switch (name.trim().toLowerCase(java.util.Locale.ROOT)) {
+        case "coins":
+        case "weapons":
+        case "armor":
+        case "armour":
+        case "rings":
+        case "amulets":
+        case "tools":
+        case "comestibles":
+        case "potions":
+        case "scrolls":
+        case "spellbooks":
+        case "wands":
+        case "gems":
+        case "stones":
+        case "boulders":
+          inventoryCategories++;
+          break;
+        default:
+          break;
+      }
+    }
+    // A single-category read-only inventory is possible; in selectable
+    // menus, require multiple category headings to avoid mislabelling.
+    return inventoryCategories >= 2
+        || (inventoryCategories >= 1 && mController.mHow == MenuSelectMode.PickNone);
   }
 
   @Override

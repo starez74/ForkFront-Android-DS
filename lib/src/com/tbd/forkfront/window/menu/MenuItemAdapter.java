@@ -24,6 +24,8 @@ public class MenuItemAdapter extends ArrayAdapter<MenuItem> {
   private MenuSelectMode mHow;
   private boolean mMenuHasTiles;
   private boolean mIsMonospaceMode;
+  private final int mRowLayoutRes;
+  private final boolean mCompactTabletRow;
 
   public MenuItemAdapter(
       AppCompatActivity context,
@@ -36,6 +38,8 @@ public class MenuItemAdapter extends ArrayAdapter<MenuItem> {
     mContext = context;
     mTileset = tileset;
     mHow = how;
+    mRowLayoutRes = textViewResourceId;
+    mCompactTabletRow = textViewResourceId == R.layout.tablet_menu_item;
     mMenuHasTiles = menuHasTiles(items);
     updateMonospaceFlag();
   }
@@ -55,14 +59,14 @@ public class MenuItemAdapter extends ArrayAdapter<MenuItem> {
   @Override
   public View getView(int position, View convertView, ViewGroup parent) {
     final float density = mContext.getResources().getDisplayMetrics().density;
-    final int clickableItemMinH = (int) (35 * density + 0.5f);
-    final int clickableHeaderMinH = (int) (25 * density + 0.5f);
+    final int clickableItemMinH = (int) ((mCompactTabletRow ? 32 : 35) * density + 0.5f);
+    final int clickableHeaderMinH = (int) ((mCompactTabletRow ? 23 : 25) * density + 0.5f);
 
     View v = convertView;
     if (v == null) {
       LayoutInflater vi =
           (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-      v = vi.inflate(R.layout.menu_item, parent, false);
+      v = vi.inflate(mRowLayoutRes, parent, false);
     }
     MenuItem item = mItems.get(position);
     if (item != null) {
@@ -73,11 +77,13 @@ public class MenuItemAdapter extends ArrayAdapter<MenuItem> {
         } else {
           v.setBackgroundResource(R.color.md_theme_surfaceVariant);
         }
-        if (mHow == MenuSelectMode.PickMany) v.setMinimumHeight(clickableHeaderMinH);
+        if (mCompactTabletRow || mHow == MenuSelectMode.PickMany)
+          v.setMinimumHeight(clickableHeaderMinH);
         else v.setMinimumHeight(0);
       } else {
         v.setBackgroundResource(0);
-        if (mHow == MenuSelectMode.PickNone) v.setMinimumHeight(0);
+        if (mHow == MenuSelectMode.PickNone && !mCompactTabletRow)
+          v.setMinimumHeight(0);
         else v.setMinimumHeight(clickableItemMinH);
       }
 
@@ -89,8 +95,12 @@ public class MenuItemAdapter extends ArrayAdapter<MenuItem> {
         at.setVisibility(View.GONE);
       } else {
         at.setVisibility(View.VISIBLE);
-        at.setText(item.getAccText());
-        if (mIsMonospaceMode) {
+        at.setText(mCompactTabletRow
+            ? (item.hasAcc() ? Character.toString(item.getAcc()) : "")
+            : item.getAccText());
+        if (mCompactTabletRow) {
+          at.getLayoutParams().width = (int) (22 * density + 0.5f);
+        } else if (mIsMonospaceMode) {
           at.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
           at.requestLayout();
           at.invalidate();

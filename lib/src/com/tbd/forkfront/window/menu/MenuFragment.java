@@ -53,6 +53,18 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
           container, false);
     }
 
+    if (docked) {
+      // NetHack inventory often supplies no title: keep the dock recognisable.
+      android.widget.TextView title = mRoot.findViewById(R.id.title);
+      if (title != null) {
+        String menuTitle = mController.getTitle();
+        if (menuTitle == null || menuTitle.trim().isEmpty()) {
+          menuTitle = how == MenuSelectMode.PickNone ? "Inventory" : "Menu";
+        }
+        title.setText(menuTitle);
+      }
+    }
+
     mListView = mRoot.findViewById(R.id.menu_list);
     mSelectAllBtn = mRoot.findViewById(R.id.btn_all);
     View okBtn = mRoot.findViewById(R.id.btn_ok);
@@ -84,7 +96,7 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
       mListView.setAdapter(
           new MenuItemAdapter(
               (AppCompatActivity) requireActivity(),
-              R.layout.menu_item,
+              docked ? R.layout.tablet_menu_item : R.layout.menu_item,
               (ArrayList<MenuItem>) mController.mItems,
               mController.mTileset,
               mController.mHow));

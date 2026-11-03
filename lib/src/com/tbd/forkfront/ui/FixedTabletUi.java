@@ -81,7 +81,8 @@ public final class FixedTabletUi
     TextView status = label(activity, 12, true);
     status.setSingleLine(true);
     status.setEllipsize(TextUtils.TruncateAt.END);
-    status.setAutoSizeTextTypeUniformWithConfiguration(9, 12, 1, TypedValue.COMPLEX_UNIT_SP);
+    // Fit the *entire* line, including XP and turns, without clipping the tail.
+    status.setAutoSizeTextTypeUniformWithConfiguration(7, 11, 1, TypedValue.COMPLEX_UNIT_SP);
     status.setPadding(dp(activity, 9), 0, dp(activity, 6), 0);
     status.setGravity(Gravity.CENTER_VERTICAL);
     status.setBackground(outline(activity));
@@ -91,7 +92,8 @@ public final class FixedTabletUi
     header.addView(status, statusParam);
 
     TextView message = label(activity, 12, true);
-    message.setSingleLine(true);
+    // A narrow message column may wrap to a second line without covering gameplay.
+    message.setMaxLines(2);
     message.setEllipsize(TextUtils.TruncateAt.END);
     message.setGravity(Gravity.CENTER_VERTICAL);
     message.setPadding(dp(activity, 8), 0, dp(activity, 8), 0);
@@ -116,7 +118,7 @@ public final class FixedTabletUi
     stage.addView(sidebar, sidebarParams);
 
     TextView placeholder = label(activity, 13, true);
-    placeholder.setText("Inventory / menu");
+    placeholder.setText("Inventory / menu\nPress i to open");
     placeholder.setPadding(dp(activity, 10), dp(activity, 10), dp(activity, 8), 0);
     sidebar.addView(placeholder, new FrameLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -324,7 +326,7 @@ public final class FixedTabletUi
 
   private String value(int index) {
     NHW_Status.StatusField f = fields.get(index);
-    return f != null && f.enabled && f.value != null ? f.value : "";
+    return f != null && f.enabled && f.value != null ? f.value.trim() : "";
   }
 
   private void appendField(SpannableStringBuilder line, int index, String prefix, int color) {

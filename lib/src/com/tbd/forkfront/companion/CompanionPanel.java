@@ -1,5 +1,6 @@
 package com.tbd.forkfront.companion;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -13,6 +14,8 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -42,6 +45,7 @@ public final class CompanionPanel {
   private final TextView status;
   private final LinearLayout results;
   private final Spinner rolePicker;
+  private Dialog resultsDialog;
   private boolean factual;
   private String detectedRole = "Adventurer";
   private int generation;
@@ -155,12 +159,14 @@ public final class CompanionPanel {
   }
 
   public void hide() {
+    dismissResults();
     generation++;
     root.setVisibility(View.GONE);
     input.clearFocus();
   }
 
   public void close() {
+    dismissResults();
     destroyed = true;
     generation++;
     wiki.close();
@@ -224,6 +230,7 @@ public final class CompanionPanel {
       status.setText("Please keep questions under 160 characters.");
       return;
     }
+    dismissResults();
     final int request = ++generation;
     final boolean requestedFactual = factual;
     final String requestedRole = currentRole();
@@ -238,35 +245,133 @@ public final class CompanionPanel {
       } else if (articles.isEmpty()) {
         status.setText("No matching wiki pages found.");
       } else {
-        status.setText("Wiki results • tap a heading to read the source");
-        if (!requestedFactual)
-          addText(CompanionRole.inWorldIntro(requestedRole), ACCENT, 11, true);
-        for (CompanionWikiLookup.Result article : articles) {
-          TextView title = addText(article.title + "  ↗", ACCENT, 12, true);
-          title.setOnClickListener(v -> open(article.url));
-          if (!article.snippet.isEmpty())
-            addText(article.snippet, TEXT, 11, false);
-          View line = new View(activity);
-          line.setBackgroundColor(0xFF41434D);
-          LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-              ViewGroup.LayoutParams.MATCH_PARENT, dp(1));
-          lp.setMargins(0, dp(5), 0, dp(5));
-          results.addView(line, lp);
-        }
+        status.setText(articles.size() + " wiki articles found. Read in larger window.");
+        TextView view = button("View wiki results ↗");
+        view.setOnClickListener(v ->
+            showResultsDialog(question, requestedRole, requestedFactual, articles));
+        results.addView(view, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        showResultsDialog(question, requestedRole, requestedFactual, articles);
       }
       TextView fallback = button("Open full Wiki search ↗");
       fallback.setOnClickListener(v -> open(CompanionWikiLookup.searchUrl(question)));
       results.addView(fallback, new LinearLayout.LayoutParams(
-          ViewGroup.LayoutParams.MATCH_PARENT, dp(33)));
+          ViewGroup.LayoutParams.MATCH_PARENT, dp(36)));
     });
   }
 
-  private TextView addText(String text, int color, int size, boolean bold) {
-    TextView v = label(text, size, color);
-    if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    v.setPadding(dp(3), dp(3), dp(3), dp(3));
-    results.addView(v);
-    return v;
+  /**
+   * Results are read in a wider modal window, not squeezed into the
+   * 213dp inventory dock. The virtual keyboard and the dungeon remain
+   * unchanged beneath it. Closing returns to the companion question.
+   */
+  private void showResultsDialog(String question, String role, boolean factMode,
+      List<CompanionWikiLookup.Result> articles) {
+    if (destroyed || !isVisible()) return;
+    dismissResults();
+
+    final Dialog dialog = new Dialog(activity);
+    LinearLayout content = new LinearLayout(activity);
+    content.setOrientation(LinearLayout.VERTICAL);
+    content.setPadding(dp(18), dp(12), dp(18), dp(12));
+    GradientDrawable background = new GradientDrawable();
+    background.setColor(BACKGROUND);
+    background.setCornerRadius(dp(9));
+    background.setStroke(dp(1), 0xFF747780);
+    content.setBackground(background);
+
+    LinearLayout header = row();
+    TextView title = label("Dungeon Companion • " + role, 18, ACCENT);
+    title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    header.addView(title, new LinearLayout.LayoutParams(0, dp(42), 1));
+    TextView close = button("✕  Close");
+    close.setContentDescription("Close wiki results and return to game");
+    close.setOnClickListener(v -> dialog.dismiss());
+    header.addView(close, new LinearLayout.LayoutParams(dp(100), dp(38)));
+    content.addView(header);
+
+    TextView subtitle = label("NetHackWiki results for: " + question, 13, DIM);
+    subtitle.setMaxLines(2);
+    content.addView(subtitle);
+
+    if (!factMode) {
+      TextView intro = label(CompanionRole.inWorldIntro(role), 13, ACCENT);
+      intro.setPadding(0, dp(12), 0, dp(7));
+      content.addView(intro);
+    }
+
+    ScrollView scroll = new ScrollView(activity);
+    scroll.setFillViewport(false);
+    LinearLayout articleList = new LinearLayout(activity);
+    articleList.setOrientation(LinearLayout.VERTICAL);
+    scroll.addView(articleList);
+    LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, 0, 1);
+    scrollParams.topMargin = dp(9);
+    content.addView(scroll, scrollParams);
+
+    for (CompanionWikiLookup.Result article : articles) {
+      TextView heading = label(article.title + "  ↗", 17, ACCENT);
+      heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+      heading.setPadding(0, dp(10), 0, dp(8));
+      heading.setOnClickListener(v -> open(article.url));
+      articleList.addView(heading);
+
+      TextView summary = label(
+          article.snippet.isEmpty()
+              ? "No readable summary available. Open this article to read the source."
+              : article.snippet, 14,
+          article.snippet.isEmpty() ? DIM : TEXT);
+      summary.setPadding(0, 0, 0, dp(12));
+      articleList.addView(summary);
+
+      View divider = new View(activity);
+      divider.setBackgroundColor(0xFF494B55);
+      articleList.addView(divider, new LinearLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+    }
+
+    TextView search = button("Open complete NetHackWiki search ↗");
+    search.setOnClickListener(v -> open(CompanionWikiLookup.searchUrl(question)));
+    LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(39));
+    searchParams.topMargin = dp(9);
+    content.addView(search, searchParams);
+
+    TextView source = label("Article excerpts: NetHackWiki • CC BY-SA 3.0", 11, DIM);
+    source.setGravity(Gravity.CENTER);
+    source.setOnClickListener(v -> open(CompanionWikiLookup.LICENSE));
+    content.addView(source, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(28)));
+
+    dialog.setContentView(content);
+    dialog.setCancelable(true);
+    dialog.setOnDismissListener(d -> {
+      if (resultsDialog == dialog) resultsDialog = null;
+    });
+    resultsDialog = dialog;
+    dialog.show();
+
+    Window window = dialog.getWindow();
+    if (window != null) {
+      window.setBackgroundDrawableResource(android.R.color.transparent);
+      window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+      WindowManager.LayoutParams attributes = window.getAttributes();
+      attributes.dimAmount = 0.58f;
+      window.setAttributes(attributes);
+      int width = activity.getResources().getDisplayMetrics().widthPixels;
+      int height = activity.getResources().getDisplayMetrics().heightPixels;
+      window.setLayout((int) (width * 0.80f), (int) (height * 0.76f));
+      window.setGravity(Gravity.CENTER);
+    }
+  }
+
+  private void dismissResults() {
+    if (resultsDialog != null) {
+      Dialog dialog = resultsDialog;
+      resultsDialog = null;
+      dialog.dismiss();
+    }
   }
 
   private void open(String url) {

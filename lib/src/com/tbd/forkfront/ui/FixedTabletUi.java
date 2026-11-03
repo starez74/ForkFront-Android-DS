@@ -170,7 +170,7 @@ public final class FixedTabletUi
       {"q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "Bksp"},
       {"a", "s", "d", "f", "g", "h", "j", "k", "l", "Enter"},
       {"Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "?", "Shift"},
-      {"Ctrl", "!#1", "Esc", "Space", "Tab", "<", ">"}
+      {"Ctrl", "!#1", "Esc", "Space", "Tab", "<", ">", "#"}
     };
     for (int rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       LinearLayout row = new LinearLayout(activity);
@@ -225,9 +225,14 @@ public final class FixedTabletUi
         }
         break;
     }
-    if (activity.getState() != null) {
-      // GameInputRouter handles menus, prompts and gameplay in the normal order.
-      activity.handleKeyDown(keyCode, value, 0, EnumSet.noneOf(Input.Modifier.class));
+    NH_State state = activity.getState();
+    if (state != null) {
+      // A touchscreen button sends no hardware KeyEvent. When an Android EditText
+      // prompt is open, write into it instead of letting GetLine swallow the key.
+      if (!state.handleFixedTabletTextKey(value, keyCode)) {
+        // Other prompts, inventory and gameplay still use the existing router.
+        activity.handleKeyDown(keyCode, value, 0, EnumSet.noneOf(Input.Modifier.class));
+      }
     }
     shift = false;
     ctrl = false;

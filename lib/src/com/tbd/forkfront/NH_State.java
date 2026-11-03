@@ -217,6 +217,11 @@ public class NH_State implements ForkFrontHost {
     return mRouter;
   }
 
+  /** Route virtual tablet key presses to the current native text-entry field. */
+  public boolean handleFixedTabletTextKey(char value, int keyCode) {
+    return mGetLine.handleFixedTabletKey(value, keyCode);
+  }
+
   public GamepadContextBridge getGamepadContext() {
     return mCtxBridge;
   }

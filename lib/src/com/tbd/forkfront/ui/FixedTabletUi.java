@@ -115,7 +115,8 @@ public final class FixedTabletUi
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
     FrameLayout menu = new FrameLayout(activity);
-    menu.setId(View.generateViewId());
+    // Stable across Activity restoration: FragmentManager needs a deterministic container ID.
+    menu.setId(R.id.fixed_tablet_menu_host);
     menu.setVisibility(View.GONE);
     sidebar.addView(menu, new FrameLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

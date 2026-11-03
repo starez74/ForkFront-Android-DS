@@ -19,19 +19,19 @@ public final class CompanionRole {
 
   static {
     Map<String, String[]> ranks = new LinkedHashMap<>();
-    ranks.put("Archeologist", new String[] {"Digger", "Field Worker", "Investigator", "Exhumer", "Excavator", "Spelunker", "Speleologist", "Collector", "Curator");
-    ranks.put("Barbarian", new String[] {"Plunderer", "Plunderess", "Pillager", "Bandit", "Brigand", "Raider", "Reaver", "Slayer", "Chieftain", "Chieftainess", "Conqueror", "Conqueress");
-    ranks.put("Caveman", new String[] {"Troglodyte", "Aborigine", "Wanderer", "Vagrant", "Wayfarer", "Roamer", "Nomad", "Rover", "Pioneer");
-    ranks.put("Healer", new String[] {"Rhizotomist", "Empiric", "Embalmer", "Dresser", "Medicus ossium", "Medica ossium", "Herbalist", "Magister", "Magistra", "Physician", "Chirurgeon");
-    ranks.put("Knight", new String[] {"Gallant", "Esquire", "Bachelor", "Sergeant", "Knight", "Banneret", "Chevalier", "Chevaliere", "Seignieur", "Dame", "Paladin");
-    ranks.put("Monk", new String[] {"Candidate", "Novice", "Initiate", "Student of Stones", "Student of Waters", "Student of Metals", "Student of Winds", "Student of Fire", "Master");
-    ranks.put("Priest", new String[] {"Aspirant", "Acolyte", "Adept", "Priest", "Priestess", "Curate", "Canon", "Canoness", "Lama", "Patriarch", "Matriarch", "High Priest", "High Priestess");
-    ranks.put("Rogue", new String[] {"Footpad", "Cutpurse", "Rogue", "Pilferer", "Robber", "Burglar", "Filcher", "Magsman", "Magswoman", "Thief");
-    ranks.put("Ranger", new String[] {"Edhel", "Elleth", "Edhel", "Elleth", "Ohtar", "Ohtie", "Kano", "Kanie", "Arandur", "Aranduriel", "Hir", "Hiril", "Aredhel", "Arwen", "Ernil", "Elentariel", "Elentar", "Elentari", "Tenderfoot", "Lookout", "Trailblazer", "Reconnoiterer", "Reconnoiteress", "Scout", "Arbalester", "Archer");
-    ranks.put("Samurai", new String[] {"Hatamoto", "Ronin", "Ninja", "Kunoichi", "Joshu", "Ryoshu", "Kokushu", "Daimyo", "Kuge", "Shogun");
-    ranks.put("Tourist", new String[] {"Rambler", "Sightseer", "Excursionist", "Peregrinator", "Peregrinatrix", "Traveler", "Journeyer", "Voyager", "Explorer", "Adventurer");
-    ranks.put("Valkyrie", new String[] {"Stripling", "Skirmisher", "Fighter", "Man-at-arms", "Woman-at-arms", "Warrior", "Swashbuckler", "Hero", "Heroine", "Champion", "Lord", "Lady");
-    ranks.put("Wizard", new String[] {"Evoker", "Conjurer", "Thaumaturge", "Magician", "Enchanter", "Enchantress", "Sorcerer", "Sorceress", "Necromancer", "Wizard", "Mage");
+    ranks.put("Archeologist", new String[] {"Digger", "Field Worker", "Investigator", "Exhumer", "Excavator", "Spelunker", "Speleologist", "Collector", "Curator"});
+    ranks.put("Barbarian", new String[] {"Plunderer", "Plunderess", "Pillager", "Bandit", "Brigand", "Raider", "Reaver", "Slayer", "Chieftain", "Chieftainess", "Conqueror", "Conqueress"});
+    ranks.put("Caveman", new String[] {"Troglodyte", "Aborigine", "Wanderer", "Vagrant", "Wayfarer", "Roamer", "Nomad", "Rover", "Pioneer"});
+    ranks.put("Healer", new String[] {"Rhizotomist", "Empiric", "Embalmer", "Dresser", "Medicus ossium", "Medica ossium", "Herbalist", "Magister", "Magistra", "Physician", "Chirurgeon"});
+    ranks.put("Knight", new String[] {"Gallant", "Esquire", "Bachelor", "Sergeant", "Knight", "Banneret", "Chevalier", "Chevaliere", "Seignieur", "Dame", "Paladin"});
+    ranks.put("Monk", new String[] {"Candidate", "Novice", "Initiate", "Student of Stones", "Student of Waters", "Student of Metals", "Student of Winds", "Student of Fire", "Master"});
+    ranks.put("Priest", new String[] {"Aspirant", "Acolyte", "Adept", "Priest", "Priestess", "Curate", "Canon", "Canoness", "Lama", "Patriarch", "Matriarch", "High Priest", "High Priestess"});
+    ranks.put("Rogue", new String[] {"Footpad", "Cutpurse", "Rogue", "Pilferer", "Robber", "Burglar", "Filcher", "Magsman", "Magswoman", "Thief"});
+    ranks.put("Ranger", new String[] {"Edhel", "Elleth", "Edhel", "Elleth", "Ohtar", "Ohtie", "Kano", "Kanie", "Arandur", "Aranduriel", "Hir", "Hiril", "Aredhel", "Arwen", "Ernil", "Elentariel", "Elentar", "Elentari", "Tenderfoot", "Lookout", "Trailblazer", "Reconnoiterer", "Reconnoiteress", "Scout", "Arbalester", "Archer"});
+    ranks.put("Samurai", new String[] {"Hatamoto", "Ronin", "Ninja", "Kunoichi", "Joshu", "Ryoshu", "Kokushu", "Daimyo", "Kuge", "Shogun"});
+    ranks.put("Tourist", new String[] {"Rambler", "Sightseer", "Excursionist", "Peregrinator", "Peregrinatrix", "Traveler", "Journeyer", "Voyager", "Explorer", "Adventurer"});
+    ranks.put("Valkyrie", new String[] {"Stripling", "Skirmisher", "Fighter", "Man-at-arms", "Woman-at-arms", "Warrior", "Swashbuckler", "Hero", "Heroine", "Champion", "Lord", "Lady"});
+    ranks.put("Wizard", new String[] {"Evoker", "Conjurer", "Thaumaturge", "Magician", "Enchanter", "Enchantress", "Sorcerer", "Sorceress", "Necromancer", "Wizard", "Mage"});
     RANKS = Collections.unmodifiableMap(ranks);
   }
 

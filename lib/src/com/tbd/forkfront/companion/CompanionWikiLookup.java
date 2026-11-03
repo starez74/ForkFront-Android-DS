@@ -24,7 +24,9 @@ import org.json.JSONObject;
  * never character names, saves, status, inventory, or any credential.
  */
 public final class CompanionWikiLookup {
-  public static final String API = "https://nethackwiki.com/w/api.php";
+  // NetHackWiki's /w/api.php redirects to /api.php. Redirect following is
+  // intentionally disabled so a player's question is never forwarded elsewhere.
+  public static final String API = "https://nethackwiki.com/api.php";
   public static final String SEARCH = "https://nethackwiki.com/wiki/Special:Search?search=";
   public static final String LICENSE = "https://nethackwiki.com/wiki/NetHackWiki:Copyrights";
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -53,6 +55,13 @@ public final class CompanionWikiLookup {
       String error = null;
       try {
         articles = fetch(normalized);
+      } catch (WikiHttpException e) {
+        error = "NetHackWiki returned HTTP " + e.status +
+            ". Use Open full Wiki search, or retry later.";
+      } catch (java.net.SocketTimeoutException e) {
+        error = "NetHackWiki timed out. Check Internet and retry.";
+      } catch (java.net.UnknownHostException e) {
+        error = "Cannot reach NetHackWiki. Check Internet connection.";
       } catch (Exception e) {
         error = "NetHackWiki lookup unavailable. Open the wiki in a browser instead.";
       }
@@ -83,6 +92,11 @@ public final class CompanionWikiLookup {
     return result.length() > 0 ? result.toString() : cleaned;
   }
 
+  private static final class WikiHttpException extends IOException {
+    final int status;
+    WikiHttpException(int status) { super("HTTP " + status); this.status = status; }
+  }
+
   private static List<Result> fetch(String terms) throws Exception {
     if (terms.isEmpty()) return Collections.emptyList();
     String url = API + "?action=query&list=search&format=json&srnamespace=0" +
@@ -96,8 +110,9 @@ public final class CompanionWikiLookup {
     connection.setReadTimeout(7000);
     connection.setInstanceFollowRedirects(false);
     try {
-      if (connection.getResponseCode() != 200)
-        throw new IOException("Wiki responded with " + connection.getResponseCode());
+      int status = connection.getResponseCode();
+      if (status != HttpURLConnection.HTTP_OK)
+        throw new WikiHttpException(status);
       StringBuilder body = new StringBuilder();
       try (InputStream stream = connection.getInputStream();
            BufferedReader reader = new BufferedReader(

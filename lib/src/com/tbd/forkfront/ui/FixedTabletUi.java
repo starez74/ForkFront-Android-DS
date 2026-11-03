@@ -209,7 +209,9 @@ public final class FixedTabletUi
     int keyCode = KeyEvent.KEYCODE_UNKNOWN;
     switch (key) {
       case "Space": value = ' '; keyCode = KeyEvent.KEYCODE_SPACE; break;
-      case "Enter": value = '\r'; keyCode = KeyEvent.KEYCODE_ENTER; break;
+      // Native get_ext_cmd_auto() terminates on LF, not CR. Menu/dialog keys
+      // continue to be identified by KEYCODE_ENTER in the existing router.
+      case "Enter": value = '\n'; keyCode = KeyEvent.KEYCODE_ENTER; break;
       case "Bksp":
       case "Del": value = '\b'; keyCode = KeyEvent.KEYCODE_DEL; break;
       case "Esc": value = '\033'; keyCode = KeyEvent.KEYCODE_ESCAPE; break;
@@ -354,6 +356,11 @@ public final class FixedTabletUi
   }
 
   @Override public void onMessageAdded(String message) {
+    lastMessage = message != null ? message : "";
+    refreshMessage();
+  }
+  @Override public void onMessageUpdated(String message) {
+    // Echoing a #command revises the same message line rather than adding a new one.
     lastMessage = message != null ? message : "";
     refreshMessage();
   }

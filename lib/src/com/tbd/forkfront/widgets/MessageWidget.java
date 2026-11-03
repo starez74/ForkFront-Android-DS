@@ -83,6 +83,16 @@ public class MessageWidget extends ControlWidget implements NHW_Message.MessageU
   }
 
   @Override
+  public void onMessageUpdated(String message) {
+    if (mRecentMessages.isEmpty()) {
+      onMessageAdded(message);
+    } else {
+      mRecentMessages.set(mRecentMessages.size() - 1, message);
+      updateDisplay();
+    }
+  }
+
+  @Override
   public void onMessagesCleared() {
     mRecentMessages.clear();
     mMoreCount = 0;

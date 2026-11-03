@@ -22,6 +22,9 @@ public class NHW_Message implements NH_Window {
   public interface MessageUpdateListener {
     void onMessageAdded(String message);
 
+    // Replaces the latest line when NetHack incrementally echoes typed commands.
+    void onMessageUpdated(String message);
+
     void onMessagesCleared();
 
     void onMoreCountChanged(int moreCount);
@@ -118,8 +121,12 @@ public class NHW_Message implements NH_Window {
       if (append < -l.length()) append = -l.length();
       l = l.substring(0, l.length() + append);
       mLog[mCurrentIdx] = l + str;
+      notifyMessageUpdated(mLog[mCurrentIdx]);
     } else if (append > 0 && mLogCount > 0) {
-      if (str.length() > 0) mLog[mCurrentIdx] = mLog[mCurrentIdx] + str;
+      if (str.length() > 0) {
+        mLog[mCurrentIdx] = mLog[mCurrentIdx] + str;
+        notifyMessageUpdated(mLog[mCurrentIdx]);
+      }
     } else {
       addMessage(str);
     }
@@ -141,6 +148,12 @@ public class NHW_Message implements NH_Window {
   private void notifyMessageAdded(String message) {
     for (MessageUpdateListener listener : mListeners) {
       listener.onMessageAdded(message);
+    }
+  }
+
+  private void notifyMessageUpdated(String message) {
+    for (MessageUpdateListener listener : mListeners) {
+      listener.onMessageUpdated(message);
     }
   }
 

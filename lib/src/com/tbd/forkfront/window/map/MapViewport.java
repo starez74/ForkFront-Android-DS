@@ -104,6 +104,12 @@ class MapViewport {
   }
 
   boolean shouldLockView(float tileW, float tileH) {
+    // In fixed tablet mode, keep the player centred even if an entire level fits
+    // in the available viewport. Never lock the camera to the map's top-left.
+    if (mMap.mContext instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) mMap.mContext).isFixedTabletLayout()) {
+      return false;
+    }
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mMap.mContext);
     if (!prefs.getBoolean("lockView", true)) return false;
 
@@ -223,6 +229,12 @@ class MapViewport {
     } catch (Exception e) {
     }
     zoomForced(-mScaleCount);
+    // The tablet workspace uses slightly smaller, legible map glyphs by default.
+    if (mMap.mContext instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) mMap.mContext).isFixedTabletLayout()) {
+      zoomForced(-65.f);
+      centerView(mMap.mPlayerPos.x, mMap.mPlayerPos.y);
+    }
   }
 
   PointF getViewOffset() {

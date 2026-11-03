@@ -108,7 +108,26 @@ public class NHW_Menu extends AbstractNhWindow {
         .pushContext(mType == Type.Text ? UiContext.MENU_TEXT : UiContext.MENU);
   }
 
+  @Override
+  protected void addFragment(Fragment fragment) {
+    if (mType == Type.Menu && mContext instanceof com.tbd.forkfront.ForkFront) {
+      com.tbd.forkfront.ForkFront tablet = (com.tbd.forkfront.ForkFront) mContext;
+      int host = tablet.getFixedTabletMenuHostId();
+      if (host != android.view.View.NO_ID) {
+        tablet.setFixedTabletMenuVisible(true);
+        mContext.getSupportFragmentManager().beginTransaction()
+            .add(host, fragment, "nhw_" + mWid)
+            .commitAllowingStateLoss();
+        return;
+      }
+    }
+    super.addFragment(fragment);
+  }
+
   private void hide() {
+    if (mIsVisible && mType == Type.Menu && mContext instanceof com.tbd.forkfront.ForkFront) {
+      ((com.tbd.forkfront.ForkFront) mContext).setFixedTabletMenuVisible(false);
+    }
     if (mIsVisible) {
       mState
           .getGamepadContext()

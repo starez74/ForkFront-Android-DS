@@ -82,7 +82,15 @@ public class CommandPaletteController {
     }
 
     mCommandPaletteBehavior = BottomSheetBehavior.from(sheetContainer);
-    mCommandPaletteBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+    if (mActivity.isFixedTabletLayout()) {
+      // No permanent grey command-palette handle overlapping the map.
+      // Explicit palette requests still expand the same sheet normally.
+      mCommandPaletteBehavior.setHideable(true);
+      mCommandPaletteBehavior.setPeekHeight(0);
+      mCommandPaletteBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+    } else {
+      mCommandPaletteBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+    }
 
     ViewGroup mapFrame = mActivity.findViewById(R.id.map_frame);
     SearchView searchViewRef = searchView;
@@ -123,7 +131,8 @@ public class CommandPaletteController {
 
   public void collapse() {
     if (mCommandPaletteBehavior != null) {
-      mCommandPaletteBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+      mCommandPaletteBehavior.setState(mActivity.isFixedTabletLayout()
+          ? BottomSheetBehavior.STATE_HIDDEN : BottomSheetBehavior.STATE_COLLAPSED);
     }
   }
 

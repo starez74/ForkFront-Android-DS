@@ -42,10 +42,27 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
       @Nullable ViewGroup container,
       @Nullable Bundle savedInstanceState) {
     MenuSelectMode how = mController.mHow;
+    boolean docked = mController.mType == NHW_Menu.Type.Menu
+        && requireActivity() instanceof com.tbd.forkfront.ForkFront
+        && ((com.tbd.forkfront.ForkFront) requireActivity()).isFixedTabletLayout();
     if (how == MenuSelectMode.PickMany) {
-      mRoot = inflater.inflate(R.layout.dialog_menu3, container, false);
+      mRoot = inflater.inflate(docked ? R.layout.tablet_menu3 : R.layout.dialog_menu3,
+          container, false);
     } else {
-      mRoot = inflater.inflate(R.layout.dialog_menu1, container, false);
+      mRoot = inflater.inflate(docked ? R.layout.tablet_menu1 : R.layout.dialog_menu1,
+          container, false);
+    }
+
+    if (docked) {
+      // NetHack inventory often supplies no title: keep the dock recognisable.
+      android.widget.TextView title = mRoot.findViewById(R.id.title);
+      if (title != null) {
+        String menuTitle = mController.getTitle();
+        if (menuTitle == null || menuTitle.trim().isEmpty()) {
+          menuTitle = isInventoryMenu() ? "Inventory" : "Menu";
+        }
+        title.setText(menuTitle);
+      }
     }
 
     mListView = mRoot.findViewById(R.id.menu_list);
@@ -79,7 +96,7 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
       mListView.setAdapter(
           new MenuItemAdapter(
               (AppCompatActivity) requireActivity(),
-              R.layout.menu_item,
+              docked ? R.layout.tablet_menu_item : R.layout.menu_item,
               (ArrayList<MenuItem>) mController.mItems,
               mController.mTileset,
               mController.mHow));
@@ -116,6 +133,46 @@ public class MenuFragment extends Fragment implements AmountSelector.Listener {
     updateSelectAllBtn();
 
     return mRoot;
+  }
+
+  /**
+   * The game's inventory often has a blank prompt and can use PickOne, so
+   * menu selection mode alone cannot identify it. Recognise familiar NetHack
+   * inventory category headers, but keep other selection menus labelled Menu.
+   */
+  private boolean isInventoryMenu() {
+    if (mController.mItems == null) return false;
+    int inventoryCategories = 0;
+    for (MenuItem item : mController.mItems) {
+      if (item == null || !item.isHeader()) continue;
+      String name = item.getName();
+      if (name == null) continue;
+      switch (name.trim().toLowerCase(java.util.Locale.ROOT)) {
+        case "coins":
+        case "weapons":
+        case "armor":
+        case "armour":
+        case "rings":
+        case "amulets":
+        case "tools":
+        case "comestibles":
+        case "potions":
+        case "scrolls":
+        case "spellbooks":
+        case "wands":
+        case "gems":
+        case "stones":
+        case "boulders":
+          inventoryCategories++;
+          break;
+        default:
+          break;
+      }
+    }
+    // A single-category read-only inventory is possible; in selectable
+    // menus, require multiple category headings to avoid mislabelling.
+    return inventoryCategories >= 2
+        || (inventoryCategories >= 1 && mController.mHow == MenuSelectMode.PickNone);
   }
 
   @Override

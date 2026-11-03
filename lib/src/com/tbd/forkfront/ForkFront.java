@@ -60,6 +60,7 @@ import java.util.Locale;
 
 public class ForkFront extends AppCompatActivity implements ForkFrontHost {
   private NetHackViewModel mViewModel;
+  private com.tbd.forkfront.ui.FixedTabletUi mFixedTabletUi;
   private boolean mBackTracking;
   private DrawerMenuController mDrawerMenuController;
   private SecondaryDisplayController mSecondaryDisplayController;
@@ -225,6 +226,7 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
     // takeKeyEvents(true);
 
     setContentView(R.layout.mainwindow);
+    mFixedTabletUi = com.tbd.forkfront.ui.FixedTabletUi.install(this);
 
     // Initialization of controllers
     mSecondaryDisplayController = new SecondaryDisplayController(this);
@@ -286,6 +288,7 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
 
     // Attach current Activity context
     mViewModel.attachActivity(this);
+    if (mFixedTabletUi != null) mFixedTabletUi.attach(mViewModel.getState());
 
     // Initialize gamepad support
     initGamepad();
@@ -471,6 +474,8 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
     if (mGamepadDispatcher != null) mGamepadDispatcher.destroy();
     if (mSecondaryDisplayController != null) mSecondaryDisplayController.onDestroy();
 
+    if (mFixedTabletUi != null) mFixedTabletUi.detach();
+
     // ViewModel's onCleared() will handle saveAndQuit() when Activity is truly finished
     // (not just being recreated for configuration change)
     super.onDestroy();
@@ -546,6 +551,8 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
         && insets.isVisible(WindowInsetsCompat.Type.ime());
   }
   public void showGameKeyboard() {
+    // The fixed keyboard is always visible; never open the floating Samsung IME here.
+    if (mFixedTabletUi != null) return;
     if (mGameKeyboardView == null) {
       mGameKeyboardView = new View(this) {
         @Override
@@ -835,6 +842,18 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
     }
 
     return super.dispatchKeyEvent(event);
+  }
+
+  public boolean isFixedTabletLayout() {
+    return mFixedTabletUi != null;
+  }
+
+  public int getFixedTabletMenuHostId() {
+    return mFixedTabletUi != null ? mFixedTabletUi.getMenuHostId() : View.NO_ID;
+  }
+
+  public void setFixedTabletMenuVisible(boolean visible) {
+    if (mFixedTabletUi != null) mFixedTabletUi.showMenu(visible);
   }
 
   public NH_State getState() {

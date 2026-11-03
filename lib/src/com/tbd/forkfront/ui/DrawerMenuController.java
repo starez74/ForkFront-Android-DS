@@ -28,6 +28,12 @@ public class DrawerMenuController {
     mDrawerLayout = mActivity.findViewById(R.id.drawer_layout);
     NavigationView navigationView = mActivity.findViewById(R.id.nav_view);
     if (navigationView != null) {
+      if (mActivity.isFixedTabletLayout()) {
+        android.view.MenuItem edit = navigationView.getMenu().findItem(R.id.nav_edit_overlay);
+        android.view.MenuItem keyboard = navigationView.getMenu().findItem(R.id.nav_keyboard);
+        if (edit != null) edit.setVisible(false);
+        if (keyboard != null) keyboard.setVisible(false);
+      }
       navigationView.setNavigationItemSelectedListener(
           item -> {
             handleNavigationItemSelected(item.getItemId());

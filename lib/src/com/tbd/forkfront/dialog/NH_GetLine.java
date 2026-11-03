@@ -47,13 +47,19 @@ public class NH_GetLine {
     mTitle = title;
     mMaxChars = nMaxChars;
     mHistory = loadHistory();
-    mUI = new UI(context, mIO, true, true, getInitText());
+    boolean useNativeKeyboard = !(context instanceof ForkFront)
+        || !((ForkFront) context).isFixedTabletLayout();
+    mUI = new UI(context, mIO, true, useNativeKeyboard, getInitText());
     mState.getGamepadContext().pushContext(UiContext.GETLINE);
   }
 
   public void setContext(AppCompatActivity context) {
     mContext = context;
-    if (mUI != null) mUI = new UI(context, mIO, mUI.mSaveHistory, mUI.mSaveHistory, getInitText());
+    if (mUI != null) {
+      boolean useNativeKeyboard = !(context instanceof ForkFront)
+          || !((ForkFront) context).isFixedTabletLayout();
+      mUI = new UI(context, mIO, mUI.mSaveHistory, useNativeKeyboard, getInitText());
+    }
   }
 
   private String getInitText() {
@@ -82,6 +88,45 @@ public class NH_GetLine {
       char ch, int nhKey, int keyCode, Set<Input.Modifier> modifiers, int repeatCount) {
     if (mUI == null) return KeyEventResult.IGNORED;
     return mUI.handleKeyDown(ch, nhKey, keyCode, modifiers, repeatCount);
+  }
+
+  /**
+   * Touchscreen keyboard clicks bypass Android's hardware-key dispatch. Forward
+   * them into an active GetLine EditText, preserving its input filters and cursor
+   * selection. Normal hardware keys continue through handleKeyDown unchanged.
+   */
+  public boolean handleFixedTabletKey(char ch, int keyCode) {
+    if (mUI == null || mUI.mRoot == null || mUI.mInput == null) return false;
+
+    if (keyCode == KeyEvent.KEYCODE_ENTER) {
+      mUI.ok();
+      return true;
+    }
+    if (keyCode == KeyEvent.KEYCODE_ESCAPE || ch == '\033') {
+      mUI.cancel();
+      return true;
+    }
+
+    android.text.Editable text = mUI.mInput.getText();
+    int start = Math.max(0, mUI.mInput.getSelectionStart());
+    int end = Math.max(0, mUI.mInput.getSelectionEnd());
+    int left = Math.min(start, end);
+    int right = Math.max(start, end);
+
+    if (keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_FORWARD_DEL) {
+      if (left != right) text.delete(left, right);
+      else if (keyCode == KeyEvent.KEYCODE_DEL && left > 0) text.delete(left - 1, left);
+      else if (keyCode == KeyEvent.KEYCODE_FORWARD_DEL && left < text.length()) {
+        text.delete(left, left + 1);
+      }
+      return true;
+    }
+
+    if (ch >= ' ' && ch != 0x7f) {
+      text.replace(left, right, String.valueOf(ch));
+    }
+    // Never forward unrecognised control keys from GetLine to gameplay.
+    return true;
   }
 
   public boolean isFocused() {

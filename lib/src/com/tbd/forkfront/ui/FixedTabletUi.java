@@ -39,6 +39,13 @@ public final class FixedTabletUi
   private final TextView menuPlaceholder;
   private NHW_Status statusWindow;
   private NHW_Message messageWindow;
+  private long conditionMask;
+  private String lastMessage = "";
+  private int moreCount;
+  private static final String[] CONDITION_NAMES = {
+      "Stone", "Slime", "Strngl", "FoodPois", "TermIll", "Blind",
+      "Deaf", "Stun", "Conf", "Hallu", "Lev", "Fly", "Ride"
+  };
   private final Map<Integer, NHW_Status.StatusField> fields = new HashMap<>();
   private boolean shift, ctrl, symbols;
   private TextView shiftButton, ctrlButton, symbolButton;
@@ -126,7 +133,7 @@ public final class FixedTabletUi
     FixedTabletUi ui = new FixedTabletUi(activity, status, message, menu, placeholder);
     LinearLayout controls = new LinearLayout(activity);
     controls.setOrientation(LinearLayout.HORIZONTAL);
-    controls.setPadding(dp(activity, 7), dp(activity, 5), dp(activity, 7), dp(activity, 5));
+    controls.setPadding(dp(activity, 7), dp(activity, 5), 0, dp(activity, 5));
     controls.setBackground(outline(activity));
 
     LinearLayout.LayoutParams keyboardParams =
@@ -140,7 +147,7 @@ public final class FixedTabletUi
       if (state != null) state.getCommands().sendDirKeyCmd(c);
     });
     controls.addView(dpad, new LinearLayout.LayoutParams(
-        dp(activity, 200), ViewGroup.LayoutParams.MATCH_PARENT));
+        dp(activity, 213), ViewGroup.LayoutParams.MATCH_PARENT));
 
     LinearLayout.LayoutParams controlsParams =
         new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 223));
@@ -255,6 +262,7 @@ public final class FixedTabletUi
     statusWindow = null;
     messageWindow = null;
     fields.clear();
+    conditionMask = 0;
   }
 
   @Override
@@ -263,7 +271,9 @@ public final class FixedTabletUi
   }
 
   @Override
-  public void onConditionsUpdated(long mask, long[] colors) {}
+  public void onConditionsUpdated(long mask, long[] colors) {
+    conditionMask = mask;
+  }
 
   @Override
   public void onFlush() {
@@ -278,20 +288,33 @@ public final class FixedTabletUi
     appendField(line, NHW_Status.BL_CH, "Ch:", TEXT);
     appendField(line, NHW_Status.BL_LEVELDESC, "", TEXT);
     appendField(line, NHW_Status.BL_GOLD, "$:", 0xFFFFD13B);
-    append(line, "HP:" + value(NHW_Status.BL_HP) + "(" + value(NHW_Status.BL_HPMAX) + ")",
-        0xFF80D545);
-    append(line, "Pw:" + value(NHW_Status.BL_ENE) + "(" + value(NHW_Status.BL_ENEMAX) + ")",
-        0xFF80D545);
+    if (!value(NHW_Status.BL_HP).isEmpty()) {
+      append(line, "HP:" + value(NHW_Status.BL_HP) + "(" + value(NHW_Status.BL_HPMAX) + ")",
+          0xFF80D545);
+    }
+    if (!value(NHW_Status.BL_ENE).isEmpty()) {
+      append(line, "Pw:" + value(NHW_Status.BL_ENE) + "(" + value(NHW_Status.BL_ENEMAX) + ")",
+          0xFF80D545);
+    }
     appendField(line, NHW_Status.BL_AC, "AC:", TEXT);
     appendField(line, NHW_Status.BL_XP, "Xp:", TEXT);
     appendField(line, NHW_Status.BL_TIME, "T:", TEXT);
     appendField(line, NHW_Status.BL_HUNGER, "", TEXT);
     appendField(line, NHW_Status.BL_CAP, "", TEXT);
+    for (int i = 0; i < CONDITION_NAMES.length; i++) {
+      if ((conditionMask & (1L << i)) != 0) {
+        append(line, CONDITION_NAMES[i], 0xFFFFA35B);
+      }
+    }
     statusLine.setText(line);
   }
 
   @Override
-  public void onReset() { fields.clear(); statusLine.setText(""); }
+  public void onReset() {
+    fields.clear();
+    conditionMask = 0;
+    statusLine.setText("");
+  }
 
   private String value(int index) {
     NHW_Status.StatusField f = fields.get(index);
@@ -305,17 +328,29 @@ public final class FixedTabletUi
 
   private static void append(SpannableStringBuilder line, String part, int color) {
     if (part == null || part.isEmpty()) return;
-    if (line.length() > 0) line.append("  ");
+    if (line.length() > 0) line.append(" ");
     int start = line.length();
     line.append(part);
     line.setSpan(new ForegroundColorSpan(color), start, line.length(), 33);
   }
 
   @Override public void onMessageAdded(String message) {
-    if (message != null) messageLine.setText(message);
+    lastMessage = message != null ? message : "";
+    refreshMessage();
   }
-  @Override public void onMessagesCleared() { messageLine.setText(""); }
-  @Override public void onMoreCountChanged(int count) {}
+  @Override public void onMessagesCleared() {
+    lastMessage = "";
+    moreCount = 0;
+    refreshMessage();
+  }
+  @Override public void onMoreCountChanged(int count) {
+    moreCount = count;
+    refreshMessage();
+  }
+
+  private void refreshMessage() {
+    messageLine.setText(lastMessage + (moreCount > 0 ? "  --More--" : ""));
+  }
 
   private static TextView label(ForkFront activity, int size, boolean mono) {
     TextView view = new TextView(activity);

@@ -1,6 +1,11 @@
 package com.tbd.forkfront.companion;
 
 import android.app.Dialog;
+import androidx.appcompat.app.AlertDialog;
+import android.text.InputType;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.util.ArrayList;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -38,6 +43,15 @@ public final class CompanionPanel {
   private static final int BACKGROUND = 0xFF101015;
   private final ForkFront activity;
   private final CompanionWikiLookup wiki = new CompanionWikiLookup();
+  private final CompanionAiClient aiClient = new CompanionAiClient();
+  private final ArrayList<JSONObject> conversation = new ArrayList<>();
+  private JSONObject latestStatus;
+  private boolean shareStatus;
+  private TextView sharingButton;
+  private TextView configButton;
+  private String lastAiQuestion = "";
+  private String lastAiRole = "Adventurer";
+  private CompanionAiClient.Reply lastAiReply;
   private final LinearLayout root;
   private final TextView heading;
   private final TextView modeButton;
@@ -127,7 +141,25 @@ public final class CompanionPanel {
     root.addView(ask, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, dp(34)));
 
-    status = label("Answers show wiki sources, not guesses.", 10, DIM);
+    configButton = button("Configure secure AI");
+    configButton.setOnClickListener(v -> showAiSetup());
+    root.addView(configButton, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(32)));
+
+    sharingButton = button("Share HP/level: OFF");
+    sharingButton.setOnClickListener(v -> {
+      shareStatus = !shareStatus;
+      updateSharingButton();
+    });
+    root.addView(sharingButton, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(32)));
+
+    TextView askAi = button("Ask AI (wiki-grounded)");
+    askAi.setOnClickListener(v -> askAi());
+    root.addView(askAi, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(34)));
+
+    status = label("Wiki only until secure AI is configured.", 10, DIM);
     status.setMaxLines(2);
     root.addView(status, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -147,6 +179,7 @@ public final class CompanionPanel {
     root.addView(source, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, dp(26)));
     refreshHeading();
+    refreshConnectionButton();
   }
 
   public boolean isVisible() { return root.getVisibility() == View.VISIBLE; }
@@ -156,6 +189,7 @@ public final class CompanionPanel {
     root.setVisibility(View.VISIBLE);
     input.requestFocus();
     refreshHeading();
+    refreshConnectionButton();
   }
 
   public void hide() {
@@ -170,6 +204,9 @@ public final class CompanionPanel {
     destroyed = true;
     generation++;
     wiki.close();
+    aiClient.close();
+    conversation.clear();
+    latestStatus = null;
     root.setVisibility(View.GONE);
   }
 
@@ -179,6 +216,25 @@ public final class CompanionPanel {
       detectedRole = next;
       refreshHeading();
     }
+  }
+
+  /**
+   * Locally cached, deliberately restricted status; only sent when the
+   * player explicitly enables the share switch for this session.
+   */
+  public void updateLimitedStatus(JSONObject state) {
+    latestStatus = state;
+  }
+
+  private void updateSharingButton() {
+    if (sharingButton != null)
+      sharingButton.setText(shareStatus ? "Share HP/level: ON" : "Share HP/level: OFF");
+  }
+
+  private void refreshConnectionButton() {
+    if (configButton != null)
+      configButton.setText(CompanionCredentials.isConfigured(activity)
+          ? "AI: Configured (edit)" : "Configure secure AI");
   }
 
   private String currentRole() {
@@ -218,6 +274,198 @@ public final class CompanionPanel {
       e.replace(start, end, String.valueOf(ch));
     }
     return true;
+  }
+
+  private void showAiSetup() {
+    // Native Samsung input is permitted here solely for entering a server URL
+    // and a *pairing token*, never an OpenAI provider key.
+    LinearLayout fields = new LinearLayout(activity);
+    fields.setOrientation(LinearLayout.VERTICAL);
+    fields.setPadding(dp(20), dp(8), dp(20), dp(4));
+
+    TextView explanation = label(
+        "Requires your separately deployed HTTPS backend. Do NOT enter an OpenAI API key. "
+        + "Only the pairing token is saved, encrypted in Android Keystore.",
+        13, TEXT);
+    fields.addView(explanation);
+
+    EditText endpoint = new EditText(activity);
+    endpoint.setSingleLine(true);
+    endpoint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+    endpoint.setHint("https://your-backend.vercel.app/api/ask");
+    endpoint.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    endpoint.setText(CompanionCredentials.getEndpoint(activity));
+    fields.addView(endpoint);
+
+    EditText token = new EditText(activity);
+    token.setSingleLine(true);
+    token.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+    token.setHint("Pairing token (not API key)");
+    token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+    fields.addView(token);
+
+    AlertDialog dialog = new AlertDialog.Builder(activity)
+        .setTitle("Secure AI connection")
+        .setView(fields)
+        .setPositiveButton("Save", null)
+        .setNegativeButton("Cancel", null)
+        .setNeutralButton("Disconnect", null)
+        .create();
+    dialog.setOnShowListener(d -> {
+      dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        try {
+          CompanionCredentials.save(activity, endpoint.getText().toString(),
+              token.getText().toString());
+          refreshConnectionButton();
+          status.setText("AI configured. Ask a question to test connection.");
+          dialog.dismiss();
+        } catch (Exception error) {
+          Toast.makeText(activity, "Invalid HTTPS address or token; check setup.",
+              Toast.LENGTH_LONG).show();
+        }
+      });
+      dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+        CompanionCredentials.clear(activity);
+        conversation.clear();
+        lastAiReply = null;
+        refreshConnectionButton();
+        status.setText("AI disconnected. Wiki search remains available.");
+        dialog.dismiss();
+      });
+    });
+    dialog.show();
+  }
+
+  private void askAi() {
+    if (!CompanionCredentials.isConfigured(activity)) {
+      status.setText("Configure an HTTPS backend and pairing token first.");
+      showAiSetup();
+      return;
+    }
+    final String question = input.getText().toString().trim();
+    if (question.length() < 2 || question.length() > 160) {
+      status.setText("Enter a question between 2 and 160 characters.");
+      return;
+    }
+    dismissResults();
+    final int request = ++generation;
+    final boolean requestedFactual = factual;
+    final String role = currentRole();
+    final JSONObject allowedState = shareStatus ? latestStatus : null;
+    JSONArray turns = new JSONArray();
+    for (JSONObject turn : conversation) turns.put(turn);
+    results.removeAllViews();
+    status.setText(shareStatus
+        ? "Asking AI… sharing limited HP/level data."
+        : "Asking AI… sharing role and chat, but not HP/level.");
+
+    aiClient.ask(activity, question, role, requestedFactual, allowedState, turns,
+        (reply, error) -> {
+          if (destroyed || !isVisible() || request != generation) return;
+          results.removeAllViews();
+          if (error != null || reply == null) {
+            status.setText(error == null ? "AI unavailable." : error);
+            return;
+          }
+          try {
+            conversation.add(new JSONObject().put("role", "user")
+                .put("content", question));
+            conversation.add(new JSONObject().put("role", "assistant")
+                .put("content", reply.answer.substring(0, Math.min(reply.answer.length(), 450))));
+            while (conversation.size() > 6) conversation.remove(0);
+          } catch (Exception ignored) {
+            conversation.clear();
+          }
+          lastAiReply = reply;
+          lastAiQuestion = question;
+          lastAiRole = role;
+          status.setText("AI answer ready • " + reply.sources.size() + " source links");
+          TextView reopen = button("Read AI answer ↗");
+          reopen.setOnClickListener(v -> showAiResponse(lastAiQuestion, lastAiRole, lastAiReply));
+          results.addView(reopen, new LinearLayout.LayoutParams(
+              ViewGroup.LayoutParams.MATCH_PARENT, dp(39)));
+          showAiResponse(question, role, reply);
+        });
+  }
+
+  /** Same wide result layout as the proven wiki dialog, but with narrative advice. */
+  private void showAiResponse(String question, String role, CompanionAiClient.Reply reply) {
+    if (reply == null || destroyed || !isVisible()) return;
+    dismissResults();
+    Dialog dialog = new Dialog(activity);
+    LinearLayout content = new LinearLayout(activity);
+    content.setOrientation(LinearLayout.VERTICAL);
+    content.setPadding(dp(18), dp(12), dp(18), dp(12));
+    GradientDrawable background = new GradientDrawable();
+    background.setColor(BACKGROUND);
+    background.setCornerRadius(dp(9));
+    background.setStroke(dp(1), 0xFF747780);
+    content.setBackground(background);
+
+    LinearLayout header = row();
+    TextView title = label("Dungeon Companion • " + role, 18, ACCENT);
+    title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    header.addView(title, new LinearLayout.LayoutParams(0, dp(44), 1));
+    TextView close = button("✕  Close");
+    close.setOnClickListener(v -> dialog.dismiss());
+    header.addView(close, new LinearLayout.LayoutParams(dp(100), dp(38)));
+    content.addView(header);
+
+    TextView prompt = label("You asked: " + question, 13, DIM);
+    content.addView(prompt);
+
+    ScrollView scroll = new ScrollView(activity);
+    LinearLayout contentList = new LinearLayout(activity);
+    contentList.setOrientation(LinearLayout.VERTICAL);
+    scroll.addView(contentList);
+    LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, 0, 1);
+    scrollParams.topMargin = dp(12);
+    content.addView(scroll, scrollParams);
+
+    TextView answer = label(reply.answer, 16, TEXT);
+    answer.setTextIsSelectable(true);
+    answer.setPadding(0, 0, 0, dp(16));
+    contentList.addView(answer);
+
+    TextView references = label("NetHackWiki sources", 14, ACCENT);
+    references.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    contentList.addView(references);
+    if (reply.sources.isEmpty()) {
+      contentList.addView(label("No verified source excerpts available.", 12, DIM));
+    } else {
+      for (int i = 0; i < reply.sources.size(); i++) {
+        CompanionAiClient.Source source = reply.sources.get(i);
+        TextView link = label("[" + (i + 1) + "] " + source.title + " ↗", 13, ACCENT);
+        link.setPadding(0, dp(7), 0, dp(7));
+        link.setOnClickListener(v -> open(source.url));
+        contentList.addView(link);
+      }
+    }
+    TextView note = label(
+        "AI advice may be mistaken. Source excerpts: NetHackWiki • CC BY-SA 3.0. "
+            + "The game is never controlled automatically.", 11, DIM);
+    note.setGravity(Gravity.CENTER);
+    content.addView(note, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(37)));
+    dialog.setContentView(content);
+    dialog.setOnDismissListener(d -> {
+      if (resultsDialog == dialog) resultsDialog = null;
+    });
+    resultsDialog = dialog;
+    dialog.show();
+    Window w = dialog.getWindow();
+    if (w != null) {
+      w.setBackgroundDrawableResource(android.R.color.transparent);
+      WindowManager.LayoutParams a = w.getAttributes();
+      a.dimAmount = 0.58f;
+      w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+      w.setAttributes(a);
+      int width = activity.getResources().getDisplayMetrics().widthPixels;
+      int height = activity.getResources().getDisplayMetrics().heightPixels;
+      w.setLayout((int)(width * 0.80f), (int)(height * 0.76f));
+      w.setGravity(Gravity.CENTER);
+    }
   }
 
   private void ask() {

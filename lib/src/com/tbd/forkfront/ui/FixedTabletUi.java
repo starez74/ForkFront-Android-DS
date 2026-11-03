@@ -350,7 +350,10 @@ public final class FixedTabletUi
       }
     }
     statusLine.setText(line);
-    if (companion != null) companion.updateTitle(value(NHW_Status.BL_TITLE));
+    if (companion != null) {
+      companion.updateTitle(value(NHW_Status.BL_TITLE));
+      companion.updateLimitedStatus(limitedStatus());
+    }
   }
 
   @Override
@@ -358,6 +361,44 @@ public final class FixedTabletUi
     fields.clear();
     conditionMask = 0;
     statusLine.setText("");
+    if (companion != null) companion.updateLimitedStatus(null);
+  }
+
+  /**
+   * Strict allowlist for optionally shared gameplay context. Never includes
+   * BL_TITLE (player name), map coordinates, inventory, or save file content.
+   */
+  private org.json.JSONObject limitedStatus() {
+    org.json.JSONObject info = new org.json.JSONObject();
+    try {
+      addNumber(info, "hp", value(NHW_Status.BL_HP), 10000, false);
+      addNumber(info, "hpMax", value(NHW_Status.BL_HPMAX), 10000, false);
+      addNumber(info, "power", value(NHW_Status.BL_ENE), 10000, false);
+      addNumber(info, "powerMax", value(NHW_Status.BL_ENEMAX), 10000, false);
+      addNumber(info, "ac", value(NHW_Status.BL_AC), 1000, true);
+      addNumber(info, "experienceLevel", value(NHW_Status.BL_XP), 50, false);
+      String level = value(NHW_Status.BL_LEVELDESC);
+      java.util.regex.Matcher depth =
+          java.util.regex.Pattern.compile("(?:Dlvl|Depth):\\s*(\\d+)",
+              java.util.regex.Pattern.CASE_INSENSITIVE).matcher(level);
+      if (depth.find()) addNumber(info, "dungeonDepth", depth.group(1), 100, false);
+      String hunger = value(NHW_Status.BL_HUNGER);
+      if (!hunger.isEmpty()) info.put("hunger", hunger.substring(0, Math.min(32, hunger.length())));
+    } catch (org.json.JSONException ignored) {
+      return new org.json.JSONObject();
+    }
+    return info;
+  }
+
+  private static void addNumber(org.json.JSONObject out, String key, String text,
+      int maximum, boolean signed) throws org.json.JSONException {
+    try {
+      int number = Integer.parseInt(text.trim());
+      if (Math.abs((long) number) <= maximum && (signed || number >= 0))
+        out.put(key, number);
+    } catch (NumberFormatException ignored) {
+      // Unavailable or formatted fields must not be guessed.
+    }
   }
 
   private String value(int index) {

@@ -474,7 +474,7 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
     if (mGamepadDispatcher != null) mGamepadDispatcher.destroy();
     if (mSecondaryDisplayController != null) mSecondaryDisplayController.onDestroy();
 
-    if (mFixedTabletUi != null) mFixedTabletUi.detach();
+    if (mFixedTabletUi != null) mFixedTabletUi.dispose();
 
     // ViewModel's onCleared() will handle saveAndQuit() when Activity is truly finished
     // (not just being recreated for configuration change)
@@ -846,6 +846,15 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
 
   public boolean isFixedTabletLayout() {
     return mFixedTabletUi != null;
+  }
+
+  public void openCompanion() {
+    if (mFixedTabletUi != null) {
+      mFixedTabletUi.toggleCompanion();
+    } else {
+      android.widget.Toast.makeText(this, "The companion is available in fixed tablet mode",
+          android.widget.Toast.LENGTH_SHORT).show();
+    }
   }
 
   public int getFixedTabletMenuHostId() {

@@ -108,7 +108,9 @@ public class DrawerMenuController {
     NH_State state = mActivity.getState();
     if (state == null) return;
 
-    if (itemId == R.id.nav_settings) {
+    if (itemId == R.id.nav_keyboard) {
+      mActivity.showGameKeyboard();
+    } else if (itemId == R.id.nav_settings) {
       mActivity.launchSettings();
     } else if (itemId == R.id.nav_edit_overlay) {
       state.getWidgets().setEditMode(true);
@@ -142,7 +144,7 @@ public class DrawerMenuController {
             (dialog, which) -> {
               NH_State state = mActivity.getState();
               if (state != null) {
-                state.getCommands().saveAndQuit();
+                state.getCommands().sendKeyCmd('S');
               }
             })
         .setNegativeButton(android.R.string.cancel, null)

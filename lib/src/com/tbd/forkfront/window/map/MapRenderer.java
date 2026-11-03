@@ -36,7 +36,7 @@ class MapRenderer {
     mTypeface = Typeface.createFromAsset(mMap.mContext.getAssets(), "fonts/monobold.ttf");
     mPaint.setTypeface(mTypeface);
     mPaint.setTextAlign(Align.LEFT);
-    mBaseTextSize = 32.f;
+    mBaseTextSize = 48.f;
 
     // Apply smooth tile scaling preference
     updateTileFiltering();

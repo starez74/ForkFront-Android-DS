@@ -73,7 +73,7 @@ class MapViewport {
     mMap.mPlayerPos.x = playerX;
     mMap.mPlayerPos.y = playerY;
 
-    centerView(tileX, tileY);
+    centerView(playerX, playerY);
   }
 
   void centerView(final int tileX, final int tileY) {
@@ -142,7 +142,7 @@ class MapViewport {
 
   void resetZoom() {
     zoom(-mScaleCount);
-    centerView(mMap.mCursorPos.x, mMap.mCursorPos.y);
+    centerView(mMap.mPlayerPos.x, mMap.mPlayerPos.y);
   }
 
   void updateZoomLimits() {
@@ -170,7 +170,7 @@ class MapViewport {
     updateZoomLimits();
 
     // Re-center view if needed
-    centerView(mMap.mCursorPos.x, mMap.mCursorPos.y);
+    centerView(mMap.mPlayerPos.x, mMap.mPlayerPos.y);
   }
 
   void pan(float dx, float dy) {
@@ -207,7 +207,7 @@ class MapViewport {
 
   void viewAreaChanged(Rect viewRect) {
     mCanvasRect.set(viewRect);
-    mMap.centerView(mMap.mCursorPos.x, mMap.mCursorPos.y);
+    mMap.centerView(mMap.mPlayerPos.x, mMap.mPlayerPos.y);
   }
 
   void saveZoomLevel() {
@@ -222,7 +222,7 @@ class MapViewport {
       zoomLevel = prefs.getFloat("zoomLevel", 0.f);
     } catch (Exception e) {
     }
-    zoom(zoomLevel - mScaleCount);
+    zoomForced(-mScaleCount);
   }
 
   PointF getViewOffset() {

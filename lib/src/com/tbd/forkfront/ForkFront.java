@@ -532,6 +532,116 @@ public class ForkFront extends AppCompatActivity implements ForkFrontHost {
     if (state != null) state.getCommands().saveState();
   }
 
+  // Native Android/Samsung keyboard bridge for NetHack.
+  private View mGameKeyboardView;
+
+  /** Check whether the native gameplay keyboard is currently visible. */
+  public boolean isGameKeyboardVisible() {
+    if (mGameKeyboardView == null || !mGameKeyboardView.hasFocus()) return false;
+
+    WindowInsetsCompat insets =
+        ViewCompat.getRootWindowInsets(getWindow().getDecorView());
+
+    return insets != null
+        && insets.isVisible(WindowInsetsCompat.Type.ime());
+  }
+  public void showGameKeyboard() {
+    if (mGameKeyboardView == null) {
+      mGameKeyboardView = new View(this) {
+        @Override
+        public boolean onCheckIsTextEditor() {
+          return true;
+        }
+
+        @Override
+        public android.view.inputmethod.InputConnection onCreateInputConnection(
+            android.view.inputmethod.EditorInfo attrs) {
+
+          attrs.inputType =
+              android.text.InputType.TYPE_CLASS_TEXT
+                  | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                  | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+
+          attrs.imeOptions =
+              android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                  | android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN;
+
+          return new android.view.inputmethod.BaseInputConnection(this, false) {
+            @Override
+            public boolean setComposingText(CharSequence text, int cursorPosition) {
+              android.util.Log.i("NH_IME_DEBUG", "COMPOSING: " + text);
+              return super.setComposingText(text, cursorPosition);
+            }
+            @Override
+            public boolean commitText(CharSequence text, int cursorPosition) {
+              android.util.Log.i("NH_IME_DEBUG", "COMMITTED: " + text);
+              NH_State state = getState();
+              if (state == null || text == null) return false;
+
+              for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                state.getCommands().sendKeyCmd(ch == '\n' ? '\r' : ch);
+              }
+              return true;
+            }
+
+            @Override
+            public boolean deleteSurroundingText(int before, int after) {
+              NH_State state = getState();
+              if (state != null && before > 0) {
+                state.getCommands().sendKeyCmd('\b');
+                return true;
+              }
+              return super.deleteSurroundingText(before, after);
+            }
+
+            @Override
+            public boolean sendKeyEvent(KeyEvent event) {
+              if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                NH_State state = getState();
+                if (state != null) {
+                  if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                    state.getCommands().sendKeyCmd('\r');
+                    return true;
+                  }
+                  if (event.getKeyCode() == KeyEvent.KEYCODE_DEL) {
+                    state.getCommands().sendKeyCmd('\b');
+                    return true;
+                  }
+                }
+              }
+              return super.sendKeyEvent(event);
+            }
+          };
+        }
+      };
+
+      mGameKeyboardView.setFocusable(true);
+      mGameKeyboardView.setFocusableInTouchMode(true);
+
+      android.view.ViewGroup decor =
+          (android.view.ViewGroup) getWindow().getDecorView();
+
+      decor.addView(
+          mGameKeyboardView,
+          new android.view.ViewGroup.LayoutParams(1, 1));
+    }
+
+    // Allow the navigation drawer to close before opening the keyboard.
+    mGameKeyboardView.postDelayed(() -> {
+      mGameKeyboardView.requestFocus();
+
+      android.view.inputmethod.InputMethodManager imm =
+          (android.view.inputmethod.InputMethodManager)
+              getSystemService(INPUT_METHOD_SERVICE);
+
+      if (imm != null) {
+        imm.showSoftInput(
+            mGameKeyboardView,
+            android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+      }
+    }, 300);
+  }
   private void handleUiAction(UiActionId id) {
     switch (id) {
       case OPEN_DRAWER:

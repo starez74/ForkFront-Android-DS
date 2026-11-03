@@ -56,8 +56,8 @@ public class Tileset {
   public void updateTileset(SharedPreferences prefs, Resources r) {
     mFallbackRenderer = prefs.getBoolean("fallbackRenderer", false);
 
-    String tilesetName = prefs.getString("tileset", "TTY");
-    boolean customTiles = prefs.getBoolean("customTiles", false);
+    String tilesetName = "TTY";
+    boolean customTiles = false;
 
     boolean TTY = tilesetName.equals("TTY");
     int tileW, tileH;

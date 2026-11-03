@@ -35,6 +35,7 @@ public class NHW_Menu extends AbstractNhWindow {
   public int mKeyboardCount = -1;
   public final Tileset mTileset;
   private Fragment mFragment;
+  private boolean mRestoreKeyboardAfterClose;
 
   public NHW_Menu(int wid, AppCompatActivity context, EngineCommandSender io, Tileset tileset) {
     super(wid, context, io);
@@ -89,6 +90,9 @@ public class NHW_Menu extends AbstractNhWindow {
     }
     mKeyboardCount = -1;
     mIsBlocking = bBlocking;
+    mRestoreKeyboardAfterClose =
+        mContext instanceof com.tbd.forkfront.ForkFront
+            && ((com.tbd.forkfront.ForkFront) mContext).isGameKeyboardVisible();
 
     if (mFragment == null || !mFragment.isAdded()) {
       if (mType == Type.Text) mFragment = new MenuTextFragment();
@@ -142,6 +146,8 @@ public class NHW_Menu extends AbstractNhWindow {
   }
 
   public void close() {
+    boolean restoreKeyboard = mRestoreKeyboardAfterClose;
+    mRestoreKeyboardAfterClose = false;
     hide();
     super.close();
     mIsBlocking = false;
@@ -149,6 +155,10 @@ public class NHW_Menu extends AbstractNhWindow {
     mBuilder = null;
     mType = Type.None;
     mKeyboardCount = -1;
+
+    if (restoreKeyboard && mContext instanceof com.tbd.forkfront.ForkFront) {
+      ((com.tbd.forkfront.ForkFront) mContext).showGameKeyboard();
+    }
   }
 
   protected void removeFragment() {

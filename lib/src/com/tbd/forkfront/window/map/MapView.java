@@ -203,7 +203,7 @@ class MapView extends TextureView implements TextureView.SurfaceTextureListener 
         new Runnable() {
           @Override
           public void run() {
-            mMap.centerView(mMap.mCursorPos.x, mMap.mCursorPos.y);
+            mMap.centerView(mMap.mPlayerPos.x, mMap.mPlayerPos.y);
           }
         });
   }

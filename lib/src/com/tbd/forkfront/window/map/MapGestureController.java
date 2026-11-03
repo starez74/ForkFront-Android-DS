@@ -185,7 +185,7 @@ class MapGestureController {
       case MotionEvent.ACTION_MOVE:
         if (mZoomPanMode == ZoomPanMode.Pressed) tryStartPan(event);
         else if (mZoomPanMode == ZoomPanMode.Panning) calcPan(event);
-        else if (mZoomPanMode == ZoomPanMode.Zooming) calcZoom(event);
+        // Pinch-to-zoom disabled for NetHack AI Edition.
         break;
 
       default:
@@ -301,6 +301,7 @@ class MapGestureController {
     return (float) Math.sqrt(dx * dx + dy * dy);
   }
 
+  // NetHack AI Edition: touch to inspect, not move.
   private void onTouched(float x, float y, boolean bLongClick) {
     if (mMap.mIsBlocking) {
       if (!bLongClick) mMap.setBlocking(false);
@@ -308,42 +309,26 @@ class MapGestureController {
       return;
     }
 
+    if (mMap.mCommands.expectsDirection()) {
+      mIsViewPanned = false;
+      return;
+    }
+
     int tileX = mRenderer.screenToTileX(x);
     int tileY = mRenderer.screenToTileY(y);
 
-    float tileW = mRenderer.getScaledTileWidth();
-    float tileH = mRenderer.getScaledTileHeight();
-    float cx = mRenderer.tileToScreenX(mMap.mPlayerPos.x) + tileW * 0.5f;
-    float cy = mRenderer.tileToScreenY(mMap.mPlayerPos.y) + tileH * 0.5f;
+    if (tileX >= 0 && tileX < NHW_Map.TileCols
+        && tileY >= 0 && tileY < NHW_Map.TileRows) {
 
-    float dx = x - cx;
-    float dy = y - cy;
-
-    float distFromSelfSquared = dx * dx + dy * dy;
-
-    switch (getTouchResult(tileX, tileY, distFromSelfSquared)) {
-      case SEND_MY_POS:
-        tileX = mMap.mPlayerPos.x;
-        tileY = mMap.mPlayerPos.y;
-      // fall through
-      case SEND_POS:
-        tileX = NHW_Map.clamp(tileX, 0, NHW_Map.TileCols - 1);
-        tileY = NHW_Map.clamp(tileY, 0, NHW_Map.TileRows - 1);
-        if (mMap.mCommands.isMouseLocked()) mMap.setCursorPos(tileX, tileY);
+      if (mMap.mCommands.isMouseLocked()) {
+        mMap.setCursorPos(tileX, tileY);
         mMap.mCommands.sendPosCmd(tileX, tileY);
-        break;
-
-      case SEND_DIR:
-        char dir = getDir(tileX, tileY, dx, dy, distFromSelfSquared);
-
-        if (bLongClick && !mMap.mCommands.expectsDirection()) {
-          mMap.mCommands.sendKeyCmd('g');
-          mMap.mCommands.sendKeyCmd(dir);
-        } else {
-          mMap.mCommands.sendDirKeyCmd(dir);
-        }
-        break;
+      } else {
+        mMap.mCommands.sendKeyCmd(';');
+        mMap.mCommands.sendPosCmd(tileX, tileY);
+      }
     }
+
     mIsViewPanned = false;
   }
 

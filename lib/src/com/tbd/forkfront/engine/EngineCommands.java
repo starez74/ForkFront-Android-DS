@@ -29,6 +29,19 @@ public final class EngineCommands {
       mIsMouseLocked = false;
       mMapCursor.exitMapCursorMode();
     }
+    // NetHack AI Edition: adapt D-pad movement to classic number_pad mode.
+    if (mNumPad) {
+      switch (key) {
+        case 'y': key = '7'; break;
+        case 'k': key = '8'; break;
+        case 'u': key = '9'; break;
+        case 'h': key = '4'; break;
+        case 'l': key = '6'; break;
+        case 'b': key = '1'; break;
+        case 'j': key = '2'; break;
+        case 'n': key = '3'; break;
+      }
+    }
     if (mIsDPadActive) mIO.sendKeyCmd((char) key);
     else mIO.sendDirKeyCmd((char) key);
     return true;

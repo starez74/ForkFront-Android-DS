@@ -136,10 +136,12 @@ public final class FixedTabletUi
     controls.setPadding(dp(activity, 7), dp(activity, 5), 0, dp(activity, 5));
     controls.setBackground(outline(activity));
 
+    // About twice the old floating keyboard's width; reserve a gap before D-pad.
     LinearLayout.LayoutParams keyboardParams =
-        new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
-    keyboardParams.rightMargin = dp(activity, 12);
+        new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2);
     controls.addView(ui.createKeyboard(), keyboardParams);
+    controls.addView(new View(activity), new LinearLayout.LayoutParams(
+        0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
 
     DirectionalPadView dpad = new DirectionalPadView(activity);
     dpad.setOnDirectionListener(c -> {

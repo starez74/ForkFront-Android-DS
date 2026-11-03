@@ -326,7 +326,13 @@ public final class FixedTabletUi
 
   private String value(int index) {
     NHW_Status.StatusField f = fields.get(index);
-    return f != null && f.enabled && f.value != null ? f.value.trim() : "";
+    if (f == null || !f.enabled || f.value == null) return "";
+    String value = f.value.trim();
+    // Engine gold text may include a leading colon. Avoid displaying "$::5".
+    if (index == NHW_Status.BL_GOLD && value.startsWith(":")) {
+      value = value.substring(1);
+    }
+    return value;
   }
 
   private void appendField(SpannableStringBuilder line, int index, String prefix, int color) {

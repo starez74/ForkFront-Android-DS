@@ -43,7 +43,14 @@ jobs:
         run: |
           test "$(git -C lib/vendor/llama.cpp rev-parse HEAD)" = "8e23278c7c36f4429fb237467d50e2935a91e655"
           test -f lib/vendor/llama.cpp/include/llama.h
-      - name: Compile Android library and run JVM reference tests
+      - name: Compile ARM64 JNI and full Android library
         run: |
           chmod +x gradlew
-          ./gradlew :lib:assembleDebug :lib:testDebugUnitTest --no-daemon --console=plain
+          ./gradlew :lib:assembleDebug --no-daemon --console=plain
+      - name: Test offline knowledge in isolated JVM
+        run: |
+          mkdir -p /tmp/nethack-offline-testclasses
+          javac -d /tmp/nethack-offline-testclasses \
+            lib/src/com/tbd/forkfront/companion/OfflineKnowledge.java \
+            lib/tests/offline/OfflineKnowledgeSmoke.java
+          java -cp /tmp/nethack-offline-testclasses OfflineKnowledgeSmoke

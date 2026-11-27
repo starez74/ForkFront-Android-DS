@@ -150,10 +150,16 @@ public final class CompanionPanel {
     root.addView(ask, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, dp(34)));
 
-    TextView importModel = button("Import GGUF model");
+    TextView importModel = button("Import downloaded GGUF");
     importModel.setOnClickListener(v -> modelPicker.launch(new String[]{"*/*"}));
     root.addView(importModel, new LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT, dp(34)));
+
+    TextView downloadModel = button("Get a free small model ↗");
+    downloadModel.setOnClickListener(v ->
+        open("https://huggingface.co/QuantFactory/SmolLM2-360M-Instruct-GGUF"));
+    root.addView(downloadModel, new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, dp(30)));
 
     modelLabel = label("No offline model imported", 11, DIM);
     modelLabel.setMaxLines(2);
@@ -545,7 +551,9 @@ public final class CompanionPanel {
   }
 
   private void open(String url) {
-    if (url == null || !url.startsWith("https://nethackwiki.com/")) return;
+    if (url == null || !(url.startsWith("https://nethackwiki.com/")
+        || url.equals("https://huggingface.co/QuantFactory/SmolLM2-360M-Instruct-GGUF")))
+      return;
     try {
       activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     } catch (Exception e) {

@@ -65,17 +65,7 @@ public final class CompanionPanel {
   public CompanionPanel(ForkFront activity, FrameLayout parent) {
     this.activity = activity;
     modelPicker = activity.registerForActivityResult(
-        new ActivityResultContracts.OpenDocument(), uri -> {
-          if (uri == null || destroyed) return;
-          status.setText("Importing GGUF into private storage…");
-          modelStore.importFromUri(activity, uri, (error, bytes) -> {
-            if (destroyed) return;
-            updateModelLabel();
-            status.setText(error == null
-                ? "Offline model imported. No account or server required."
-                : "Model import failed: " + error);
-          });
-        });
+        new ActivityResultContracts.OpenDocument(), this::onModelChosen);
     factual = activity.getPreferences(Context.MODE_PRIVATE)
         .getBoolean("companion_factual_mode", false);
 
@@ -191,6 +181,19 @@ public final class CompanionPanel {
         ViewGroup.LayoutParams.MATCH_PARENT, dp(26)));
     refreshHeading();
     updateModelLabel();
+  }
+
+  /** Callback runs after view initialization; never acts on an unfinished constructor. */
+  private void onModelChosen(Uri uri) {
+    if (uri == null || destroyed) return;
+    status.setText("Importing GGUF into private storage…");
+    modelStore.importFromUri(activity, uri, (error, bytes) -> {
+      if (destroyed) return;
+      updateModelLabel();
+      status.setText(error == null
+          ? "Offline model imported. No account or server required."
+          : "Model import failed: " + error);
+    });
   }
 
   public boolean isVisible() { return root.getVisibility() == View.VISIBLE; }

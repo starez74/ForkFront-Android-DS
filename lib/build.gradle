@@ -23,6 +23,20 @@ android {
     targetCompatibility JavaVersion.VERSION_17
   }
 
+  // The branch build script initializes a pinned llama.cpp submodule.
+  defaultConfig {
+    ndk { abiFilters 'arm64-v8a' }
+    externalNativeBuild {
+      cmake {
+        cppFlags '-std=c++17 -O2'
+        arguments '-DANDROID_STL=c++_static', '-DCMAKE_BUILD_TYPE=Release'
+      }
+    }
+  }
+  externalNativeBuild {
+    cmake { path 'src/main/cpp/CMakeLists.txt' }
+  }
+
   sourceSets {
     main {
       manifest.srcFile 'AndroidManifest.xml'

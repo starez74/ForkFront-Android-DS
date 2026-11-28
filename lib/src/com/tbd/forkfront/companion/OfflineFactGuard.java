@@ -1,5 +1,6 @@
 package com.tbd.forkfront.companion;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -77,6 +78,46 @@ public final class OfflineFactGuard {
           "https://nethackwiki.com/wiki/Food_ration");
     }
     return null;
+  }
+
+  /**
+   * Pet observations indicate curse status, not the actual item identity.
+   * This tip is appended deterministically to all object-identification
+   * responses, including model-generated and reference-only results.
+   */
+  public static OfflineInference.Reply withPetIdentificationTip(
+      String question, OfflineInference.Reply reply) {
+    if (reply == null || !isObjectIdentificationQuestion(question)) return reply;
+    String petTip = "Pet curse-test (BUC clue): If your pet is available, place the "
+        + "item by itself on the ground in a safe area and observe the pet. "
+        + "Pets do not pick up cursed items and generally avoid stepping onto "
+        + "their squares; crossing reluctantly is also a warning. A pet picking "
+        + "up the item is strong evidence it is not cursed. Not picking it up "
+        + "alone does NOT prove it is cursed, because pets can ignore items for "
+        + "other reasons. Food, piles of items, movement conditions and pet "
+        + "behaviour can complicate the walking test. This helps estimate "
+        + "cursed versus non-cursed status, NOT the object's exact identity "
+        + "or blessed versus uncursed status.";
+    OfflineKnowledge.Note petSource = new OfflineKnowledge.Note(
+        "Pet curse-testing", petTip,
+        "https://nethackwiki.com/wiki/Curse-testing", "pet cursed BUC identification");
+    List<OfflineKnowledge.Note> sources = new ArrayList<>(reply.sources);
+    sources.add(petSource);
+    return new OfflineInference.Reply(reply.answer + "\n\n" + petTip, sources, reply.generated);
+  }
+
+  private static boolean isObjectIdentificationQuestion(String question) {
+    if (question == null) return false;
+    String q = question.toLowerCase(Locale.ROOT);
+    if (q.contains("identif") || q.contains("unidentified")) return true;
+    boolean unsure = q.contains("unknown") || q.contains("what is this")
+        || q.contains("what's this") || q.contains("figure out");
+    boolean object = q.contains("item") || q.contains("object") || q.contains("wand")
+        || q.contains("armour") || q.contains("armor") || q.contains("weapon")
+        || q.contains("ring") || q.contains("amulet") || q.contains("potion")
+        || q.contains("scroll") || q.contains("tool") || q.contains("equipment")
+        || q.contains("boots") || q.contains("helmet") || q.contains("cloak");
+    return unsure && object;
   }
 
   private static OfflineInference.Reply note(String topic, String facts, String url) {

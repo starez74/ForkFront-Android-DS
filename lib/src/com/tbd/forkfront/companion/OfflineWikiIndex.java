@@ -37,7 +37,7 @@ public final class OfflineWikiIndex {
     if (q.contains("trap")) return "trap";
     if (q.contains("spell")) return "spell";
     if (q.contains("scroll")) return "scroll";
-    if (q.contains("ring")) return "ring";
+    if (q.matches(".*\\\\b(ring|rings)\\\\b.*")) return "ring";
     if (q.contains("amulet")) return "amulet";
     if (q.contains("dragon")) return "dragon";
     if (q.contains("shop")) return "shop";
@@ -45,7 +45,8 @@ public final class OfflineWikiIndex {
     if (q.contains("wand")) return "wand";
     if (q.contains("elbereth")) return "elbereth";
     if (q.contains("armour") || q.contains("armor")) return "armor";
-    if (q.contains("food") || q.contains("starv")) return "food";
+    if (q.contains("hunger") || q.contains("hungry") || q.contains("starv")) return "hunger";
+    if (q.contains("food")) return "food";
     if (q.contains("curse")) return "curse";
     if (q.contains("identif")) return "identification";
     return null;
@@ -86,14 +87,17 @@ public final class OfflineWikiIndex {
           + "unknown danger avoid safely";
     }
     if (q.contains("monk") || q.contains("armor") || q.contains("armour")) {
-      return "monk body armor worn penalty martial arts unarmed defense "
-          + "spellcasting protection equipment robe";
+      return "monk body armor wearing penalty penalties disadvantage combat "
+          + "to-hit unarmed defense martial arts restriction drawbacks";
     }
-    if (q.contains("food") || q.contains("hungry")) {
+    if (q.contains("food") || q.contains("hungry") || q.contains("hunger")) {
       return "food ration nutrition hunger eat eating turns satiated starvation";
     }
     if (q.contains("wand")) {
       return "wand engrave identify charges zap testing wand identification";
+    }
+    if (q.contains("floating eye")) {
+      return "paralysis paralyzed gaze passive attack retaliation immobilized dangers";
     }
     return "";
   }
@@ -136,6 +140,19 @@ public final class OfflineWikiIndex {
         candidate.append(sentence);
         if (candidate.length() < 85) continue;
         int score = rank(candidate.toString(), words, intent);
+        String text = candidate.toString().toLowerCase(Locale.ROOT);
+        if (question.toLowerCase(Locale.ROOT).contains("monk")
+            && (question.toLowerCase(Locale.ROOT).contains("armor")
+                || question.toLowerCase(Locale.ROOT).contains("armour"))) {
+          if (text.contains("penalty") || text.contains("penalties")
+              || text.contains("to-hit") || text.contains("disadvantage")) score += 30;
+          if (text.contains("most ideal suits")) score -= 28;
+        }
+        if (question.toLowerCase(Locale.ROOT).contains("floating eye")) {
+          if (text.contains("paraly")) score += 28;
+        }
+        if (question.toLowerCase(Locale.ROOT).contains("hunger")
+            && (text.contains("nutrition") || text.contains("food"))) score += 10;
         if (score > bestScore) {
           bestScore = score;
           best = candidate.toString();

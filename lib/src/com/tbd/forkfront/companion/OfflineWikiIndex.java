@@ -25,12 +25,14 @@ public final class OfflineWikiIndex {
     if (question == null || maxResults < 1 || !installed(context)) return results;
     StringBuilder query = new StringBuilder();
     int terms = 0;
+    String titleKeyword = null;
     for (String word : question.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+")) {
       if (word.length() < 4 || word.equals("what") || word.equals("should")
           || word.equals("does") || word.equals("have") || word.equals("with")
           || word.equals("when") || word.equals("about") || word.equals("avoid")
           || word.equals("could") || word.equals("would") || word.equals("your")) continue;
       if (terms++ >= MAX_QUERY_TERMS) break;
+      if (titleKeyword == null) titleKeyword = word;
       if (query.length() != 0) query.append(" OR ");
       query.append('"').append(word).append('"');
     }
@@ -42,7 +44,7 @@ public final class OfflineWikiIndex {
                 + "WHERE wiki_fts MATCH ? ORDER BY "
                 + "(CASE WHEN lower(title) LIKE ? THEN 0 ELSE 1 END), length(body) "
                 + "LIMIT ?",
-            new String[]{query.toString(), "%" + question.toLowerCase(Locale.ROOT).trim() + "%",
+            new String[]{query.toString(), "%" + titleKeyword + "%",
                 Integer.toString(Math.min(4, maxResults))})) {
       while (cursor.moveToNext()) {
         String title = cursor.getString(0);

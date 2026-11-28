@@ -50,33 +50,16 @@ public final class OfflineAnswerGuard {
     return true;
   }
 
-  private static boolean poorlyGrounded(String answer, List<OfflineKnowledge.Note> notes) {
-    StringBuilder evidence = new StringBuilder();
-    for (OfflineKnowledge.Note note : notes) {
-      evidence.append(' ').append(note.topic).append(' ').append(note.facts);
-    }
-    Set<String> supported = words(evidence.toString());
-    Set<String> answerWords = words(answer);
-    Set<String> unsupported = new HashSet<>(answerWords);
-    unsupported.removeAll(supported);
-    // Common connective language is not a new gameplay claim.
-    unsupported.removeAll(words(
-        "because therefore possible should before after could would dangerous "
-            + "however although instead rather player character equipment "
-            + "without careful important effectively usually generally "
-            + "information about these those their there where which "
-            + "being having making doing using avoid ability possible"));
-    return unsupported.size() >= 3
-        && unsupported.size() * 100 > Math.max(1, answerWords.size()) * 23;
-  }
+  // Generic word overlap is not a factuality check. Qwen3 can faithfully
+  // paraphrase a reference using synonyms that are absent from the original
+  // paragraph. Withholding on that basis rejected correct encumbrance advice.
 
   public static OfflineInference.Reply screen(String question, OfflineInference.Reply reply) {
     if (reply == null || !reply.generated) return reply;
     String reason = null;
     if (weakEvidence(reply.sources)) reason = "insufficient relevant source detail";
     else if (repetitive(reply.answer)) reason = "repetitive model output";
-    else if (poorlyGrounded(reply.answer, reply.sources))
-      reason = "claims not adequately grounded in the supplied source";
+    // Do not classify vocabulary differences as unsupported gameplay claims.
 
     if (reason == null) return reply;
     return new OfflineInference.Reply(

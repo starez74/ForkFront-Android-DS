@@ -111,7 +111,11 @@ public final class OfflineInference {
       } catch (Exception exception) {
         error = "Local model failed: " + exception.getClass().getSimpleName();
       }
-      final Reply result = OfflineFactGuard.withPetIdentificationTip(question, reply);
+      // Screen normal factual gameplay answers, but preserve unfiltered
+      // outputs in the explicit raw-model benchmark for diagnostics.
+      final Reply screened = allowCurated && factual
+          ? OfflineAnswerGuard.screen(question, reply) : reply;
+      final Reply result = OfflineFactGuard.withPetIdentificationTip(question, screened);
       final String failure = error;
       ui.post(() -> { if (!stopped) callback.complete(result, failure); });
     });

@@ -48,6 +48,13 @@ public final class OfflineInference {
   public void ask(Context context, String question, String role, boolean factual,
       JSONObject status, Callback callback) {
     final File model = OfflineModelStore.model(context);
+    final Reply curated = OfflineFactGuard.answer(question);
+    if (curated != null) {
+      // Known safety-sensitive mechanics are answered from curated, attributed
+      // notes instead of asking the tiny model to invent unstated rules.
+      ui.post(() -> { if (!stopped) callback.complete(curated, null); });
+      return;
+    }
     // Prefer attributed PC-built offline wiki excerpts when installed. Keep
     // proven starter notes as fallback and cap evidence for the 1700-token limit.
     final List<OfflineKnowledge.Note> sources = new ArrayList<>();

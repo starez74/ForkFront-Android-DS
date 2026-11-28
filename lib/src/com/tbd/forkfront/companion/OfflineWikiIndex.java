@@ -32,6 +32,16 @@ public final class OfflineWikiIndex {
     if (q.contains("burden") || q.contains("encumbr")
         || q.contains("carry too much") || q.contains("too much equipment")) return "encumbrance";
     if (q.contains("potion")) return "potion";
+    if (q.contains("monk")) return "monk";
+    if (q.contains("prayer") || q.contains("pray")) return "prayer";
+    if (q.contains("trap")) return "trap";
+    if (q.contains("spell")) return "spell";
+    if (q.contains("scroll")) return "scroll";
+    if (q.contains("ring")) return "ring";
+    if (q.contains("amulet")) return "amulet";
+    if (q.contains("dragon")) return "dragon";
+    if (q.contains("shop")) return "shop";
+    if (q.contains("weapon")) return "weapon";
     if (q.contains("wand")) return "wand";
     if (q.contains("elbereth")) return "elbereth";
     if (q.contains("armour") || q.contains("armor")) return "armor";
@@ -75,6 +85,16 @@ public final class OfflineWikiIndex {
       return "identify unidentified identification cursed bless test discover "
           + "unknown danger avoid safely";
     }
+    if (q.contains("monk") || q.contains("armor") || q.contains("armour")) {
+      return "monk body armor worn penalty martial arts unarmed defense "
+          + "spellcasting protection equipment robe";
+    }
+    if (q.contains("food") || q.contains("hungry")) {
+      return "food ration nutrition hunger eat eating turns satiated starvation";
+    }
+    if (q.contains("wand")) {
+      return "wand engrave identify charges zap testing wand identification";
+    }
     return "";
   }
 
@@ -90,8 +110,11 @@ public final class OfflineWikiIndex {
     }
     // Tiny fragments, markup debris and disambiguation content are poor
     // evidence even when several terms happen to match.
-    if (passage.length() < 55) score -= 12;
-    if (lower.contains("may refer to") || lower.contains("on nethackwiki")) score -= 20;
+    if (passage.length() < 145) score -= 25;
+    if (lower.contains("may refer to") || lower.contains("on nethackwiki")) score -= 25;
+    if (lower.contains("there are some things you can do")
+        || lower.startsWith(". ") || lower.contains(". messages. ")
+        || lower.contains(". strategy. ")) score -= 20;
     return score;
   }
 
@@ -119,7 +142,7 @@ public final class OfflineWikiIndex {
         }
       }
     }
-    if (bestScore <= 0) {
+    if (bestScore < 8 || best.length() < 145) {
       // Don't force a low-relevance excerpt into the model context.
       return "";
     }

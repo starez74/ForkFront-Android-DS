@@ -1,0 +1,56 @@
+name: Offline Companion Android checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/offline-ondevice-ai]
+    paths:
+      - 'lib/**'
+      - '.gitmodules'
+      - '.github/workflows/offline-companion-android.yml'
+  pull_request:
+    paths:
+      - 'lib/**'
+      - '.gitmodules'
+      - '.github/workflows/offline-companion-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ARM64 library and knowledge tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout pinned llama.cpp dependency
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK (fixed removed-tools issue)
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - name: Install Android SDK / NDK / CMake
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;30.0.16248370" "cmake;3.22.1"
+      - name: Verify pinned inference source
+        run: |
+          test "$(git -C lib/vendor/llama.cpp rev-parse HEAD)" = "8e23278c7c36f4429fb237467d50e2935a91e655"
+          test -f lib/vendor/llama.cpp/include/llama.h
+      - name: Compile ARM64 JNI and full Android library
+        run: |
+          chmod +x gradlew
+          ./gradlew :lib:assembleDebug --no-daemon --console=plain
+      - name: Test offline knowledge in isolated JVM
+        run: |
+          mkdir -p /tmp/nethack-offline-testclasses
+          javac -d /tmp/nethack-offline-testclasses \
+            lib/src/com/tbd/forkfront/companion/OfflineKnowledge.java \
+            lib/tests/offline/OfflineKnowledgeSmoke.java
+          java -cp /tmp/nethack-offline-testclasses OfflineKnowledgeSmoke

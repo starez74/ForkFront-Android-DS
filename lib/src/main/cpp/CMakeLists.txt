@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(nethack_offline_ai LANGUAGES C CXX)
+
+# Pinned submodule is initialized by Build-OfflineCompanion.ps1.
+set(LLAMA_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../../vendor/llama.cpp")
+if(NOT EXISTS "${LLAMA_SOURCE}/include/llama.h")
+    message(FATAL_ERROR "Pinned llama.cpp missing. Run Build-OfflineCompanion.ps1")
+endif()
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
+set(LLAMA_OPENSSL OFF CACHE BOOL "" FORCE)
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+set(GGML_BACKEND_DL OFF CACHE BOOL "" FORCE)
+set(GGML_CPU_ALL_VARIANTS OFF CACHE BOOL "" FORCE)
+set(GGML_CPU_KLEIDIAI OFF CACHE BOOL "" FORCE)
+
+add_subdirectory("${LLAMA_SOURCE}" "${CMAKE_CURRENT_BINARY_DIR}/llama_build")
+add_library(nethack_llama SHARED offline_inference.cpp)
+target_include_directories(nethack_llama PRIVATE "${LLAMA_SOURCE}/include")
+target_link_libraries(nethack_llama PRIVATE llama ggml android log)
+target_compile_features(nethack_llama PRIVATE cxx_std_17)

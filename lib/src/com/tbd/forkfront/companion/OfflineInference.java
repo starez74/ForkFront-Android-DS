@@ -47,7 +47,7 @@ public final class OfflineInference {
 
   public void ask(Context context, String question, String role, boolean factual,
       JSONObject status, Callback callback) {
-    askInternal(context, question, role, factual, status, callback, true);
+    askInternal(context, question, role, factual, status, callback, true, true);
   }
 
   /**
@@ -56,11 +56,17 @@ public final class OfflineInference {
    */
   public void askRawModelForBenchmark(Context context, String question, String role,
       boolean factual, JSONObject status, Callback callback) {
-    askInternal(context, question, role, factual, status, callback, false);
+    askInternal(context, question, role, factual, status, callback, false, false);
+  }
+
+  /** Debug-only test of the answer gate with curated topic overrides disabled. */
+  public void askScreenedModelForBenchmark(Context context, String question, String role,
+      boolean factual, JSONObject status, Callback callback) {
+    askInternal(context, question, role, factual, status, callback, false, true);
   }
 
   private void askInternal(Context context, String question, String role, boolean factual,
-      JSONObject status, Callback callback, boolean allowCurated) {
+      JSONObject status, Callback callback, boolean allowCurated, boolean screenOutput) {
     final File model = OfflineModelStore.model(context);
     final Reply curated = allowCurated ? OfflineFactGuard.answer(question) : null;
     if (curated != null) {
@@ -113,7 +119,7 @@ public final class OfflineInference {
       }
       // Screen normal factual gameplay answers, but preserve unfiltered
       // outputs in the explicit raw-model benchmark for diagnostics.
-      final Reply screened = allowCurated && factual
+      final Reply screened = screenOutput && factual
           ? OfflineAnswerGuard.screen(question, reply) : reply;
       final Reply result = OfflineFactGuard.withPetIdentificationTip(question, screened);
       final String failure = error;

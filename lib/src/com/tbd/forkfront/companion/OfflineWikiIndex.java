@@ -37,7 +37,7 @@ public final class OfflineWikiIndex {
     if (q.contains("trap")) return "trap";
     if (q.contains("spell")) return "spell";
     if (q.contains("scroll")) return "scroll";
-    if (q.matches(".*\\\\b(ring|rings)\\\\b.*")) return "ring";
+    if (q.matches(".*\\b(ring|rings)\\b.*")) return "ring";
     if (q.contains("amulet")) return "amulet";
     if (q.contains("dragon")) return "dragon";
     if (q.contains("shop")) return "shop";

@@ -40,7 +40,7 @@ public final class OfflineWikiIndex {
     try (SQLiteDatabase db = SQLiteDatabase.openDatabase(
         database(context).getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         Cursor cursor = db.rawQuery(
-            "SELECT title, substr(body,1,1600), url FROM wiki_fts "
+            "SELECT title, snippet(wiki_fts, '', '', ' ... ', 1, 48), url FROM wiki_fts "
                 + "WHERE wiki_fts MATCH ? ORDER BY "
                 + "(CASE WHEN lower(title) LIKE ? THEN 0 ELSE 1 END), length(body) "
                 + "LIMIT ?",

@@ -118,16 +118,11 @@ public final class OfflineFactGuard {
   public static OfflineInference.Reply withPetIdentificationTip(
       String question, OfflineInference.Reply reply) {
     if (reply == null || !isObjectIdentificationQuestion(question)) return reply;
-    String petTip = "Pet curse-test (BUC clue): If your pet is available, place the "
-        + "item by itself on the ground in a safe area and observe the pet. "
-        + "Pets do not pick up cursed items and generally avoid stepping onto "
-        + "their squares; crossing reluctantly is also a warning. A pet picking "
-        + "up the item is strong evidence it is not cursed. Not picking it up "
-        + "alone does NOT prove it is cursed, because pets can ignore items for "
-        + "other reasons. Food, piles of items, movement conditions and pet "
-        + "behaviour can complicate the walking test. This helps estimate "
-        + "cursed versus non-cursed status, NOT the object's exact identity "
-        + "or blessed versus uncursed status.";
+    String petTip = "Pet curse-test (BUC clue): Place the item alone on the ground "
+        + "and observe your pet. Pets generally avoid cursed items and will not "
+        + "pick them up. Picking it up suggests the item is not cursed, but "
+        + "ignoring it does NOT prove it is cursed. This does not identify the "
+        + "item or distinguish blessed from uncursed.";
     OfflineKnowledge.Note petSource = new OfflineKnowledge.Note(
         "Pet curse-testing", petTip,
         "https://nethackwiki.com/wiki/Curse-testing", "pet cursed BUC identification");
@@ -139,7 +134,12 @@ public final class OfflineFactGuard {
   private static boolean isObjectIdentificationQuestion(String question) {
     if (question == null) return false;
     String q = question.toLowerCase(Locale.ROOT);
-    if (q.contains("identif") || q.contains("unidentified")) return true;
+    // An item being unidentified does not itself mean the player asked how
+    // to identify it. Avoid lengthy pet advice in unrelated risk questions.
+    if (q.contains("risk") || q.contains("danger") || q.contains("drink")
+        || q.contains("quaff") || q.contains("eat")) return false;
+    if (q.contains("identif") && (q.contains("how") || q.contains("method")
+        || q.contains("way") || q.contains("test") || q.contains("help"))) return true;
     boolean unsure = q.contains("unknown") || q.contains("what is this")
         || q.contains("what's this") || q.contains("figure out");
     boolean object = q.contains("item") || q.contains("object") || q.contains("wand")

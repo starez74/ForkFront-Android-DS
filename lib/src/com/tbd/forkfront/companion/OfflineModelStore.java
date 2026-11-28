@@ -3,6 +3,8 @@ package com.tbd.forkfront.companion;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
+import android.system.ErrnoException;
+import android.system.Os;
 import android.os.Looper;
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,6 +49,18 @@ public final class OfflineModelStore {
       try {
         if (!folder.exists() && !folder.mkdirs())
           throw new IllegalStateException("Unable to create private model directory");
+        if (!folder.isDirectory())
+          throw new IllegalStateException("Private model path is not a directory");
+        // Some tablet installations created this directory without search (x)
+        // permission. Repair existing directories as well as newly created ones
+        // before attempting to open or copy a GGUF file inside it.
+        try {
+          Os.chmod(folder.getAbsolutePath(), 0700);
+        } catch (ErrnoException permissionError) {
+          throw new IllegalStateException("Cannot access private model directory", permissionError);
+        }
+        if (!folder.canExecute() || !folder.canWrite())
+          throw new IllegalStateException("Private model directory is not writable");
         if (folder.getUsableSpace() < MIN_BYTES + 80L * 1024 * 1024)
           throw new IllegalStateException("Not enough free space for a GGUF");
         try (InputStream in = app.getContentResolver().openInputStream(uri);

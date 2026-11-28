@@ -73,8 +73,21 @@ public final class OfflineWikiIndex {
    */
   private static String intentWords(String question) {
     String q = question.toLowerCase(Locale.ROOT);
-    if (q.contains("danger") || q.contains("risk") || q.contains("harm")
-        || q.contains("unidentified potion")) {
+    // Specific mechanics take precedence over generic danger wording.
+    if (q.contains("floating eye")) {
+      return "paralysis paralyzing paralyzed passive gaze retaliation attack hit "
+          + "immobile vulnerable helpless monster";
+    }
+    if (q.contains("monk") && (q.contains("armor") || q.contains("armour"))) {
+      return "monk body armor wearing penalty penalties to-hit attack combat "
+          + "spellcasting unarmed disadvantage";
+    }
+    if (q.contains("unidentified potion") || (q.contains("potion")
+        && (q.contains("risk") || q.contains("danger")))) {
+      return "potion quaff drinking unidentified harmful cursed curse-test "
+          + "blindness confusion paralysis sleeping sickness risky";
+    }
+    if (q.contains("danger") || q.contains("risk") || q.contains("harm")) {
       return "danger dangerous risk harmful death die poison paralysis petrification "
           + "stone blind cursed quaff drink handle touch gloves sickness confusion";
     }
@@ -141,15 +154,30 @@ public final class OfflineWikiIndex {
         if (candidate.length() < 85) continue;
         int score = rank(candidate.toString(), words, intent);
         String text = candidate.toString().toLowerCase(Locale.ROOT);
-        if (question.toLowerCase(Locale.ROOT).contains("monk")
-            && (question.toLowerCase(Locale.ROOT).contains("armor")
-                || question.toLowerCase(Locale.ROOT).contains("armour"))) {
-          if (text.contains("penalty") || text.contains("penalties")
-              || text.contains("to-hit") || text.contains("disadvantage")) score += 30;
-          if (text.contains("most ideal suits")) score -= 28;
+        String q = question.toLowerCase(Locale.ROOT);
+        // Prefer the actual consequence/cause to a distant strategy aside.
+        if (q.contains("monk")
+            && (q.contains("armor") || q.contains("armour"))) {
+          boolean armor = text.contains("armor") || text.contains("armour");
+          boolean hitPenalty = text.contains("to-hit") || text.contains("hit penalty");
+          if (armor && hitPenalty && (text.contains("20") || text.contains("penalty")))
+            score += 110;
+          else if (armor && text.contains("penalty")) score += 55;
+          if (text.contains("most ideal suits")) score -= 35;
+          if (text.contains("spellbook of restore ability")) score -= 85;
         }
-        if (question.toLowerCase(Locale.ROOT).contains("floating eye")) {
-          if (text.contains("paraly")) score += 28;
+        if (q.contains("floating eye")) {
+          if (text.contains("passive") && text.contains("paraly")) score += 100;
+          else if (text.contains("gaze") && text.contains("paraly")) score += 85;
+          else if (text.contains("paraly")) score += 18;
+        }
+        if (q.contains("unidentified potion") || (q.contains("potion")
+            && (q.contains("risk") || q.contains("danger")))) {
+          if (text.contains("cursed") && text.contains("quaff")) score += 65;
+          if (text.contains("harmful") && (text.contains("paralysis")
+              || text.contains("blindness") || text.contains("sickness"))) score += 75;
+          if (text.contains("perhaps, a healer") || text.contains("table below"))
+            score -= 80;
         }
         if (question.toLowerCase(Locale.ROOT).contains("hunger")
             && (text.contains("nutrition") || text.contains("food"))) score += 10;

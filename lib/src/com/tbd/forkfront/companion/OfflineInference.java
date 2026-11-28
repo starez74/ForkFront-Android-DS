@@ -108,6 +108,12 @@ public final class OfflineInference {
             if (terminator >= 0) output = output.substring(0, terminator).trim();
             int nextRole = output.indexOf("<|im_start|>");
             if (nextRole >= 0) output = output.substring(0, nextRole).trim();
+            // Qwen3 can emit empty thinking delimiters even in /no_think mode.
+            // Never display internal thinking text to the player.
+            if (output.startsWith("<think>")) {
+              int endThink = output.indexOf("</think>");
+              output = endThink >= 0 ? output.substring(endThink + 8).trim() : "";
+            }
             if (output.isEmpty()) error = "The local model returned an empty reply.";
             else reply = new Reply(output, sources, true);
           }
@@ -156,6 +162,9 @@ public final class OfflineInference {
         + stateLine + "\n"
         + "Reference notes:\n" + evidence
         + "Question: " + question.substring(0, Math.min(question.length(), 160))
+        // Qwen3's explicit switch prevents long chain-of-thought generation
+        // on the low-memory tablet; keep ChatML delimiters for its template.
+        + "\n/no_think"
         + "\n<|im_end|>\n<|im_start|>assistant\n";
   }
 }

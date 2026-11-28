@@ -41,9 +41,9 @@ public final class OfflineAnswerGuard {
     if (notes == null || notes.isEmpty()) return true;
     for (OfflineKnowledge.Note note : notes) {
       String facts = note.facts.trim();
-      // Short headings, snippets that only say "there are some things to do",
+      // A concise but meaningful source can support a concise answer.\n      // Short headings, snippets that only say "there are some things to do",
       // and extracted wiki navigation text are not useful game evidence.
-      if (facts.length() >= 150 && words(facts).size() >= 15
+      if (facts.length() >= 120 && words(facts).size() >= 12
           && !facts.toLowerCase(Locale.ROOT).contains("may refer to"))
         return false;
     }

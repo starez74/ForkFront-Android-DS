@@ -52,7 +52,8 @@ public final class OfflineInference {
     if (curated != null) {
       // Known safety-sensitive mechanics are answered from curated, attributed
       // notes instead of asking the tiny model to invent unstated rules.
-      ui.post(() -> { if (!stopped) callback.complete(curated, null); });
+      ui.post(() -> { if (!stopped) callback.complete(
+          OfflineFactGuard.withPetIdentificationTip(question, curated), null); });
       return;
     }
     // Prefer attributed PC-built offline wiki excerpts when installed. Keep
@@ -96,7 +97,7 @@ public final class OfflineInference {
       } catch (Exception exception) {
         error = "Local model failed: " + exception.getClass().getSimpleName();
       }
-      final Reply result = reply;
+      final Reply result = OfflineFactGuard.withPetIdentificationTip(question, reply);
       final String failure = error;
       ui.post(() -> { if (!stopped) callback.complete(result, failure); });
     });

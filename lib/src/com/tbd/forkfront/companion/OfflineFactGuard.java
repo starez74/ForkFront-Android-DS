@@ -15,6 +15,39 @@ public final class OfflineFactGuard {
   public static OfflineInference.Reply answer(String question) {
     if (question == null) return null;
     String q = question.toLowerCase(Locale.ROOT);
+    if (q.contains("wand") && (q.contains("identif") || q.contains("unknown"))
+        && (q.contains("charge") || q.contains("without"))) {
+      return note("Wand identification",
+          "To identify a wand without spending one of its charges, use a scroll "
+              + "of identify or the spell of identify if available; shopkeeper "
+              + "identification services may also be available. Engrave-testing "
+              + "a wand generally spends a charge, so it does not satisfy a "
+              + "strict no-charges requirement. There is no standard NetHack "
+              + "spell called reverse identify.",
+          "https://nethackwiki.com/wiki/Identification");
+    }
+    if (q.contains("floating eye") && (q.contains("melee")
+        || q.contains("fight") || q.contains("attack"))) {
+      return note("Floating eye",
+          "A floating eye can retaliate when you hit it in melee with a "
+              + "passive paralyzing gaze. Prolonged paralysis leaves you unable "
+              + "to defend yourself against other monsters and can be fatal. "
+              + "Avoid striking it in melee without appropriate protection; "
+              + "consider ranged attacks instead.",
+          "https://nethackwiki.com/wiki/Floating_eye");
+    }
+    if ((q.contains("armour") || q.contains("armor"))
+        && (q.contains("unidentified") || q.contains("unknown"))
+        && (q.contains("try") || q.contains("wear") || q.contains("put on"))) {
+      return note("Armor",
+          "Before wearing unidentified armour, try to determine whether it "
+              + "is cursed; cursed armour may be difficult or impossible to "
+              + "remove normally. Check blessed/uncursed/cursed status using "
+              + "reliable methods when available, and make sure you have a "
+              + "way to remove a curse before experimenting. Exact equipment "
+              + "behaviour depends on the NetHack version.",
+          "https://nethackwiki.com/wiki/Armor");
+    }
     if (q.contains("elbereth")) {
       return note("Elbereth",
           "Elbereth is a protective engraving of the name on the ground, not a shield "

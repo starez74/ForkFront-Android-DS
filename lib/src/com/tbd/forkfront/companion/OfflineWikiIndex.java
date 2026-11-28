@@ -10,7 +10,7 @@ import java.util.Locale;
 
 /** Optional, offline, PC-built NetHackWiki FTS4 index. No network or writes. */
 public final class OfflineWikiIndex {
-  private static final int MAX_QUERY_TERMS = 6;
+  private static final int MAX_QUERY_TERMS = 5;
   private static final int MAX_PASSAGE_CHARS = 640;
   private OfflineWikiIndex() {}
 
@@ -20,19 +20,40 @@ public final class OfflineWikiIndex {
 
   public static boolean installed(Context context) { return database(context).isFile(); }
 
+  /**
+   * Conservative title anchor: refuse broad full-text OR matches unless the
+   * requested concept can be matched to an article title. Unknown topics
+   * fall back to the small reference pack, never random wiki snippets.
+   */
+  private static String topicKeyword(String question) {
+    String q = question.toLowerCase(Locale.ROOT);
+    if (q.contains("cockatrice")) return "cockatrice";
+    if (q.contains("floating eye")) return "floating eye";
+    if (q.contains("burden") || q.contains("encumbr")
+        || q.contains("carry too much") || q.contains("too much equipment")) return "encumbrance";
+    if (q.contains("potion")) return "potion";
+    if (q.contains("wand")) return "wand";
+    if (q.contains("elbereth")) return "elbereth";
+    if (q.contains("armour") || q.contains("armor")) return "armor";
+    if (q.contains("food") || q.contains("starv")) return "food";
+    if (q.contains("curse")) return "curse";
+    if (q.contains("identify") || q.contains("identification")) return "identification";
+    return null;
+  }
+
   public static List<OfflineKnowledge.Note> find(Context context, String question, int maxResults) {
     List<OfflineKnowledge.Note> results = new ArrayList<>();
     if (question == null || maxResults < 1 || !installed(context)) return results;
     StringBuilder query = new StringBuilder();
     int terms = 0;
-    String titleKeyword = null;
+    String titleKeyword = topicKeyword(question);
+    if (titleKeyword == null) return results;
     for (String word : question.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+")) {
       if (word.length() < 4 || word.equals("what") || word.equals("should")
           || word.equals("does") || word.equals("have") || word.equals("with")
           || word.equals("when") || word.equals("about") || word.equals("avoid")
           || word.equals("could") || word.equals("would") || word.equals("your")) continue;
       if (terms++ >= MAX_QUERY_TERMS) break;
-      if (titleKeyword == null) titleKeyword = word;
       if (query.length() != 0) query.append(" OR ");
       query.append('"').append(word).append('"');
     }
@@ -41,11 +62,15 @@ public final class OfflineWikiIndex {
         database(context).getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         Cursor cursor = db.rawQuery(
             "SELECT title, snippet(wiki_fts, '', '', ' ... ', 1, 48), url FROM wiki_fts "
-                + "WHERE wiki_fts MATCH ? ORDER BY "
-                + "(CASE WHEN lower(title) LIKE ? THEN 0 ELSE 1 END), length(body) "
+                + "WHERE wiki_fts MATCH ? "
+                + "AND lower(title) LIKE ? "
+                + "AND lower(title) NOT LIKE '%dnethack%' "
+                + "AND lower(title) NOT LIKE '%variant%' "
+                + "AND lower(title) NOT LIKE '%slash''em%' "
+                + "ORDER BY CASE WHEN lower(title) = ? THEN 0 ELSE 1 END, length(title) "
                 + "LIMIT ?",
             new String[]{query.toString(), "%" + titleKeyword + "%",
-                Integer.toString(Math.min(4, maxResults))})) {
+                titleKeyword, Integer.toString(Math.min(4, maxResults))})) {
       while (cursor.moveToNext()) {
         String title = cursor.getString(0);
         String body = cursor.getString(1);

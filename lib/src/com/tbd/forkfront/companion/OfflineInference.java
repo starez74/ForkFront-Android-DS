@@ -47,8 +47,22 @@ public final class OfflineInference {
 
   public void ask(Context context, String question, String role, boolean factual,
       JSONObject status, Callback callback) {
+    askInternal(context, question, role, factual, status, callback, true);
+  }
+
+  /**
+   * Debug benchmark only: exercise actual model inference without reference
+   * shortcuts. This never changes normal gameplay companion behaviour.
+   */
+  public void askRawModelForBenchmark(Context context, String question, String role,
+      boolean factual, JSONObject status, Callback callback) {
+    askInternal(context, question, role, factual, status, callback, false);
+  }
+
+  private void askInternal(Context context, String question, String role, boolean factual,
+      JSONObject status, Callback callback, boolean allowCurated) {
     final File model = OfflineModelStore.model(context);
-    final Reply curated = OfflineFactGuard.answer(question);
+    final Reply curated = allowCurated ? OfflineFactGuard.answer(question) : null;
     if (curated != null) {
       // Known safety-sensitive mechanics are answered from curated, attributed
       // notes instead of asking the tiny model to invent unstated rules.

@@ -16,6 +16,36 @@ public final class OfflineFactGuard {
   public static OfflineInference.Reply answer(String question) {
     if (question == null) return null;
     String q = question.toLowerCase(Locale.ROOT);
+    if (q.contains("cockatrice") && q.contains("corpse")) {
+      return note("Cockatrice",
+          "A cockatrice corpse can petrify you through direct bare-handed contact, "
+              + "potentially killing you immediately. Do not pick one up or wield "
+              + "it without appropriate protection such as gloves; falling while "
+              + "wielding it can still be fatal. Avoid eating it. Exact exceptions "
+              + "depend on game version and resistances.",
+          "https://nethackwiki.com/wiki/Cockatrice");
+    }
+    if (q.contains("burden") || q.contains("encumbr")
+        || q.contains("too much equipment")) {
+      return note("Encumbrance",
+          "Carrying more than your capacity slows movement and can make escape "
+              + "or combat unsafe. Drop, stash or sell low-value heavy items; "
+              + "prioritize survival equipment and useful consumables. Check "
+              + "your burden status and avoid fighting while heavily loaded.",
+          "https://nethackwiki.com/wiki/Encumbrance");
+    }
+    if (q.contains("potion") && (q.contains("unidentified")
+        || q.contains("unknown")) && (q.contains("drink")
+        || q.contains("quaff") || q.contains("risk"))) {
+      return note("Potions",
+          "Drinking an unidentified potion is risky: it could be harmful "
+              + "(such as paralysis, blindness, confusion or sickness) "
+              + "rather than helpful. Prefer identifying it safely before "
+              + "quaffing. Observe its blessed/uncursed/cursed status where "
+              + "possible; a pet curse-test indicates curse status only, "
+              + "not the potion's identity.",
+          "https://nethackwiki.com/wiki/Potion");
+    }
     if (q.contains("wand") && (q.contains("identif") || q.contains("unknown"))
         && (q.contains("charge") || q.contains("without"))) {
       return note("Wand identification",
